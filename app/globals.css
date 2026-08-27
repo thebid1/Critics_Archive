@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-hairline;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-ink text-bone font-body antialiased;
+  }
+
+  ::selection {
+    @apply bg-accent text-ink;
+  }
+
+  /* Visible keyboard focus everywhere — never suppressed. */
+  :focus-visible {
+    outline: 2px solid theme("colors.accent");
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer utilities {
+  .container-page {
+    @apply mx-auto w-full max-w-content px-5 sm:px-8 lg:px-12;
+  }
+
+  .eyebrow {
+    @apply font-label text-[11px] uppercase tracking-widest2 text-bone-dim;
+  }
+
+  /* Slim scrollbar for the desktop horizontal product track */
+  .scrollbar-slim {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(242, 237, 226, 0.25) transparent;
+  }
+  .scrollbar-slim::-webkit-scrollbar {
+    height: 6px;
+  }
+  .scrollbar-slim::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    background: rgba(242, 237, 226, 0.25);
+    border-radius: 9999px;
+  }
+
+  .animate-nudge {
+    animation: nudge 1.6s ease-in-out infinite;
+  }
+}
+
+/* Gentle arrow nudge for the "scroll to explore" hint */
+@keyframes nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
