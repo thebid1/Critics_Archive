@@ -1,22 +1,59 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 
-// Live Cloudinary asset (source of truth for the hero). `res.cloudinary.com` is
-// allow-listed in next.config.js `images.remotePatterns`.
-const HERO_IMAGE =
-  "https://res.cloudinary.com/dicxujpqy/image/upload/v1787858884/Hero_vivzsy.jpg";
+// Living slideshow assets for the hero. `res.cloudinary.com` is allow-listed in
+// next.config.js `images.remotePatterns`.
+//
+// NOTE from the client list:
+//  - the `criticslogo_wzshst.png` previously used as a slide is NOT a hero
+//    slide — it's the brand logo, shown in the header only.
+//  - `hero4_xaiv1b.heic` is HEIC, which browsers / Next Image can't render →
+//    excluded until re-exported as jpg/png.
+const HERO_IMAGES = [
+  // Original full-bleed hero shot, retained as the first slide.
+  "https://res.cloudinary.com/dicxujpqy/image/upload/v1787858884/Hero_vivzsy.jpg",
+  "https://res.cloudinary.com/dicxujpqy/image/upload/v1787872065/hero2_kygbkb.jpg",
+  "https://res.cloudinary.com/dicxujpqy/image/upload/v1787872066/hero3_fif9v5.jpg",
+  "https://res.cloudinary.com/dicxujpqy/image/upload/v1787872065/hero5_vijxfy.jpg",
+  "https://res.cloudinary.com/dicxujpqy/image/upload/v1787872065/hero6_e1h25h.jpg",
+];
+
+const SLIDE_INTERVAL_MS = 3000; // 3s per slide
+const FADE_MS = 1200; // crossfade duration
 
 export default function Hero() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(
+      () => setActive((curr) => (curr + 1) % HERO_IMAGES.length),
+      SLIDE_INTERVAL_MS
+    );
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <section className="relative flex min-h-[88vh] items-end overflow-hidden border-b border-hairline">
-      <Image
-        src={HERO_IMAGE}
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover"
-      />
+      {/* Crossfading image stack */}
+      <div className="absolute inset-0">
+        {HERO_IMAGES.map((src, i) => (
+          <Image
+            key={src}
+            src={src}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            style={{ transitionDuration: `${FADE_MS}ms` }}
+            className={`object-cover transition-opacity ease-in-out ${
+              i === active ? "opacity-100" : "opacity-0"
+            }`}
+          />
+        ))}
+      </div>
       <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/40 to-ink/10" />
 
       <div className="container-page relative z-10 pb-14 sm:pb-20">

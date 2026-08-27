@@ -1,7 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
+
+// Brand logo asset (only place a logo is needed — the header).
+// `res.cloudinary.com` is allow-listed in next.config.js `images.remotePatterns`.
+const LOGO_IMAGE =
+  "https://res.cloudinary.com/dicxujpqy/image/upload/v1787873855/criticsslogo_skdyqj.png";
 
 export default function Header() {
   const { count, open } = useCart();
@@ -11,10 +17,22 @@ export default function Header() {
       <div className="container-page flex h-16 items-center justify-between sm:h-20">
         <Link
           href="/"
-          className="font-script text-2xl leading-none text-bone sm:text-3xl"
+          className="flex items-center gap-3"
           aria-label="CRITICS ARCHIVE — home"
         >
-          Critics Archive
+          <span className="relative block h-9 w-9 shrink-0 sm:h-10 sm:w-10">
+            <Image
+              src={LOGO_IMAGE}
+              alt=""
+              fill
+              priority
+              sizes="40px"
+              className="object-contain"
+            />
+          </span>
+          <span className="font-display text-sm uppercase tracking-widest text-bone sm:text-base">
+            Critics Archive
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-8 font-label text-xs uppercase tracking-widest2 text-bone sm:flex">

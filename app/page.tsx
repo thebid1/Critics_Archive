@@ -2,12 +2,11 @@ import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import CurrentDrop from "@/components/CurrentDrop";
 import Statement from "@/components/Statement";
-import Editorial from "@/components/Editorial";
-import CommunityStrip from "@/components/CommunityStrip";
 import Newsletter from "@/components/Newsletter";
 import Footer from "@/components/Footer";
 
-// Order matches brief §4: Hero → Drop → Statement → Editorial → Social → Footer.
+// Order matches brief §4: Hero → Drop → Statement → Newsletter → Footer
+// (Editorial and Community/Instagram sections intentionally removed per client).
 export default function HomePage() {
   return (
     <>
@@ -16,8 +15,6 @@ export default function HomePage() {
         <Hero />
         <CurrentDrop />
         <Statement />
-        <Editorial />
-        <CommunityStrip />
         <Newsletter />
       </main>
       <Footer />
