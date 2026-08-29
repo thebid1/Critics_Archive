@@ -17,10 +17,10 @@ export default function Header() {
       <div className="container-page flex h-16 items-center justify-between sm:h-20">
         <Link
           href="/"
-          className="flex items-center gap-3"
+          className="flex items-center gap-1"
           aria-label="CRITICS ARCHIVE — home"
         >
-          <span className="relative block h-9 w-9 shrink-0 sm:h-10 sm:w-10">
+          <span className="relative block h-11 w-11 shrink-0 sm:h-12 sm:w-12">
             <Image
               src={LOGO_IMAGE}
               alt=""
@@ -30,19 +30,17 @@ export default function Header() {
               className="object-contain"
             />
           </span>
-          <span className="font-display text-sm uppercase tracking-widest text-bone sm:text-base">
-            Critics Archive
+          <span className="relative block h-[29px] w-[220px] shrink-0 sm:h-[33px] sm:w-[250px]">
+            <Image
+              src="/critics-archive-wordmark.png"
+              alt="Critics Archive"
+              fill
+              priority
+              sizes="(min-width: 640px) 250px, 220px"
+              className="object-contain object-left"
+            />
           </span>
         </Link>
-
-        <nav className="hidden items-center gap-8 font-label text-xs uppercase tracking-widest2 text-bone sm:flex">
-          <Link href="/shop" className="transition-colors hover:text-accent">
-            Shop
-          </Link>
-          <Link href="/about" className="transition-colors hover:text-accent">
-            About
-          </Link>
-        </nav>
 
         <div className="flex items-center gap-4 text-bone">
           <button
@@ -68,15 +66,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile nav */}
-      <nav className="flex items-center gap-6 border-t border-hairline px-5 py-2 font-label text-xs uppercase tracking-widest2 text-bone sm:hidden">
-        <Link href="/shop" className="transition-colors hover:text-accent">
-          Shop
-        </Link>
-        <Link href="/about" className="transition-colors hover:text-accent">
-          About
-        </Link>
-      </nav>
     </header>
   );
 }
