@@ -20,8 +20,8 @@ const INFO_LINKS = [
 type SocialIcon = "instagram" | "tiktok" | "x";
 
 const SOCIAL_LINKS: { href: string; label: string; icon: SocialIcon }[] = [
-  { href: "https://instagram.com/criticsarchive", label: "Instagram", icon: "instagram" },
-  { href: "https://tiktok.com/@criticsarchive", label: "TikTok", icon: "tiktok" },
+  { href: "https://www.instagram.com/critics_archive", label: "Instagram", icon: "instagram" },
+  { href: "https://www.tiktok.com/@critics_archive", label: "TikTok", icon: "tiktok" },
   { href: "https://x.com/criticsarchive", label: "X / Twitter", icon: "x" },
 ];
 
