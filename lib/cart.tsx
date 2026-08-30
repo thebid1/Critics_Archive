@@ -11,11 +11,14 @@ import {
 import type { Product } from "@/lib/products";
 
 export type CartItem = {
+  /** Composite identity: `slug` alone for size-less adds, `slug::size` when sized. */
+  key: string;
   slug: string;
   name: string;
   price: number;
   currency: string;
   image: string;
+  size: string; // "" when the piece is single-size
   qty: number;
 };
 
@@ -27,10 +30,14 @@ type CartContextValue = {
   count: number;
   /** Grand total (price × qty) across all items. */
   total: number;
-  /** Add a product (or bump its qty) and open the drawer. */
-  addItem: (product: Product) => void;
-  removeItem: (slug: string) => void;
-  setQty: (slug: string, qty: number) => void;
+  /**
+   * Add a product in an optional size. `openDrawer` (default true) controls
+   * whether the cart drawer slides out — Buy Now passes false so the user
+   * lands straight on /checkout instead.
+   */
+  addItem: (product: Product, size?: string, openDrawer?: boolean) => void;
+  removeItem: (key: string) => void;
+  setQty: (key: string, qty: number) => void;
   open: () => void;
   close: () => void;
 };
@@ -46,37 +53,40 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const open = useCallback(() => setIsOpen(true), []);
   const close = useCallback(() => setIsOpen(false), []);
 
-  const addItem = useCallback((product: Product) => {
+  const addItem = useCallback((product: Product, size = "", openDrawer = true) => {
+    const key = size ? `${product.slug}::${size}` : product.slug;
     setItems((prev) => {
-      const existing = prev.find((i) => i.slug === product.slug);
+      const existing = prev.find((i) => i.key === key);
       if (existing) {
         return prev.map((i) =>
-          i.slug === product.slug ? { ...i, qty: i.qty + 1 } : i
+          i.key === key ? { ...i, qty: i.qty + 1 } : i
         );
       }
       return [
         ...prev,
         {
+          key,
           slug: product.slug,
           name: product.name,
           price: product.price,
           currency: product.currency,
           image: product.image,
+          size,
           qty: 1,
         },
       ];
     });
-    setIsOpen(true);
+    if (openDrawer) setIsOpen(true);
   }, []);
 
   const removeItem = useCallback(
-    (slug: string) => setItems((prev) => prev.filter((i) => i.slug !== slug)),
+    (key: string) => setItems((prev) => prev.filter((i) => i.key !== key)),
     []
   );
 
-  const setQty = useCallback((slug: string, qty: number) => {
+  const setQty = useCallback((key: string, qty: number) => {
     setItems((prev) =>
-      prev.map((i) => (i.slug === slug ? { ...i, qty: Math.max(0, qty) } : i))
+      prev.map((i) => (i.key === key ? { ...i, qty: Math.max(0, qty) } : i))
     );
   }, []);
 

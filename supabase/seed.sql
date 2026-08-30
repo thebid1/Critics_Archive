@@ -46,22 +46,40 @@ insert into product_images (product_id, url, position)
 select id, 'https://res.cloudinary.com/dicxujpqy/image/upload/v1788066154/SIA_Sweatpant_ue13go.png', 0
 from products where slug = 'sia-sweatpants';
 
--- Variants (size/stock). All paced so nothing is sold out.
+-- Variants (size/stock) — sizes now match the client's size charts exactly.
+-- Tees: S–XXL · Shorts: L–XXL · Hoodie: S–XX · Sweatpants: S–XXL · Scarf: OS.
+-- New tail sizes (XX/XXL) seeded with modest stock (2) — tune in admin later.
 insert into product_variants (product_id, size, stock)
 select id, s.size, s.stock
 from products
 cross join (values
-  ('S', 8), ('M', 10), ('L', 6), ('XL', 3)
+  ('S', 8), ('M', 10), ('L', 6), ('XL', 3), ('XXL', 2)
 ) as s(size, stock)
-where slug in ('black-runway-url-tee', 'white-runway-url-tee', 'black-swag-is-art-shorts');
+where slug in ('black-runway-url-tee', 'white-runway-url-tee', 'crt-domain-expansion-white-tee', 'crt-domain-expansion-black-tee');
 
 insert into product_variants (product_id, size, stock)
 select id, s.size, s.stock
 from products
 cross join (values
-  ('S', 4), ('M', 5), ('L', 4), ('XL', 2)
+  ('L', 6), ('XL', 3), ('XXL', 2)
 ) as s(size, stock)
-where slug in ('crt-domain-expansion-white-tee', 'crt-domain-expansion-black-tee', 'sia-hoodie', 'sia-sweatpants');
+where slug = 'black-swag-is-art-shorts';
+
+insert into product_variants (product_id, size, stock)
+select id, s.size, s.stock
+from products
+cross join (values
+  ('S', 4), ('M', 5), ('L', 4), ('XL', 2), ('XX', 2)
+) as s(size, stock)
+where slug = 'sia-hoodie';
+
+insert into product_variants (product_id, size, stock)
+select id, s.size, s.stock
+from products
+cross join (values
+  ('S', 4), ('M', 5), ('L', 4), ('XL', 2), ('XXL', 2)
+) as s(size, stock)
+where slug = 'sia-sweatpants';
 
 insert into product_variants (product_id, size, stock)
 select id, 'OS', 12

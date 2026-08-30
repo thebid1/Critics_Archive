@@ -1,27 +1,13 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/products";
-import type { MouseEvent } from "react";
-import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 
+// Every piece routes to its product page — that's where size selection and
+// "Add to bag" happen now that pieces have real size options (Stage 3).
 export default function ProductCard({ product }: { product: Product }) {
-  const { addItem } = useCart();
-
-  // In-stock pieces add to the bag (which opens the cart drawer) — this is the
-  // "click the shop item to open the bag" behaviour requested. Sold-out pieces
-  // still route to the product page.
-  function handleClick(e: MouseEvent) {
-    if (product.inStock) {
-      e.preventDefault();
-      addItem(product);
-    }
-  }
-
   return (
-    <Link href={`/product/${product.slug}`} onClick={handleClick} className="group block">
+    <Link href={`/product/${product.slug}`} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden bg-ink-raised">
         <Image
           src={product.image}
@@ -47,7 +33,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
         <div className="absolute inset-x-0 bottom-0 translate-y-full bg-bone p-3 text-center transition-transform duration-300 group-hover:translate-y-0">
           <span className="font-label text-xs uppercase tracking-widest2 text-ink">
-            {product.inStock ? "Add to bag" : "View piece"}
+            View piece
           </span>
         </div>
       </div>

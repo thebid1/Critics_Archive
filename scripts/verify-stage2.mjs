@@ -28,7 +28,7 @@ let failed = false;
 console.log("1) public read: published products…");
 const { data: products, error: readError } = await supabase
   .from("products")
-  .select("slug, name, price, is_published, product_images(url), product_variants(stock)")
+  .select("slug, name, price, currency, is_published, product_images(url), product_variants(stock)")
   .order("created_at", { ascending: true });
 
 if (readError) {

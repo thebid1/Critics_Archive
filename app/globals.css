@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide the native disclosure triangle on <details><summary> (we draw our own "+"). */
+summary::-webkit-details-marker {
+  display: none;
+}
+summary {
+  list-style: none;
+}
+
 @layer base {
   * {
     @apply border-hairline;

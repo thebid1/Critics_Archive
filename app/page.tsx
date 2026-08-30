@@ -7,6 +7,9 @@ import Footer from "@/components/Footer";
 
 // Order matches brief §4: Hero → Drop → Statement → Newsletter → Footer
 // (Editorial and Community/Instagram sections intentionally removed per client).
+// force-dynamic: CurrentDrop reads live Supabase rows; never statically prerender.
+export const dynamic = "force-dynamic";
+
 export default function HomePage() {
   return (
     <>
