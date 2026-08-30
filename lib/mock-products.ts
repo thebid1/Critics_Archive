@@ -1,17 +1,7 @@
-export type Product = {
-  slug: string;
-  name: string;
-  price: number; // in smallest display unit (whole currency, e.g. GBP)
-  currency: string;
-  isNew: boolean;
-  inStock: boolean;
-  image: string;
-  description: string;
-};
+import type { Product } from "@/lib/products";
 
-// Stage 1 mock data only. Stage 2 replaces this with a Supabase query
-// against `products` / `product_images`. Keep the shape stable so the
-// swap is a data-source change, not a component rewrite.
+// Stage 1 mock data — now a dev/outage FALLBACK only. The homepage renders from
+// Supabase via lib/products.ts when the DB is reachable. Keep in sync with supabase/seed.sql.
 export const DROP_001: Product[] = [
   {
     slug: "black-runway-url-tee",
@@ -20,7 +10,7 @@ export const DROP_001: Product[] = [
     currency: "GBP",
     isNew: true,
     inStock: true,
-    image: "https://res.cloudinary.com/dicxujpqy/image/upload/v1787858887/black_runaway_dex53r.png",
+    image: "https://res.cloudinary.com/dicxujpqy/image/upload/v1788066155/Black_Runaway_Tee_pxs9fw.png",
     description:
       "Black heavyweight tee, boxy fit, runway URL graphic across the chest.",
   },
@@ -31,7 +21,7 @@ export const DROP_001: Product[] = [
     currency: "GBP",
     isNew: true,
     inStock: true,
-    image: "https://res.cloudinary.com/dicxujpqy/image/upload/v1787858892/white_runaway_dzqndl.png",
+    image: "https://res.cloudinary.com/dicxujpqy/image/upload/v1788066155/White_Runaway_Tee_ku1lsz.png",
     description:
       "White heavyweight tee, boxy fit, runway URL graphic across the chest.",
   },
@@ -57,26 +47,54 @@ export const DROP_001: Product[] = [
     description:
       "A hoodie-detailed scarf — one statement piece with the archive wordmark woven through.",
   },
+  
   {
-    slug: "almost-gaf",
-    name: "ALMOST GAF",
-    price: 120,
-    currency: "GBP",
-    isNew: false,
-    inStock: true,
-    image: "https://res.cloudinary.com/dicxujpqy/image/upload/v1787858882/almost_gaf_xoexrf.png",
-    description:
-      "Cut-and-sew layering piece with an offset side seam and dropped panels.",
-  },
-  {
-    slug: "crt-domain-expansion",
-    name: "CRT DOMAIN EXPANSION",
+    slug: "crt-domain-expansion-white-tee",
+    name: "CRT DOMAIN EXPANSION WHITE TEE",
     price: 110,
     currency: "GBP",
-    isNew: false,
-    inStock: false,
+    isNew: true,
+    inStock: true,
     image: "https://res.cloudinary.com/dicxujpqy/image/upload/v1787858885/crt_domain_eqhsue.png",
     description:
       "CRT-flare graphic piece, domain-expansion print across the back, oversized cut.",
   },
+
+    {
+    slug: "CRT Domain Expansion Black Tee",
+    name: "CRT Domain Expansion Black Tee",
+    price: 50,
+    currency: "GBP",
+    isNew: true,
+    inStock: true,
+    image: "https://res.cloudinary.com/dicxujpqy/image/upload/v1788066779/CRT_Domain_Expansion_Black_Tee_y7fruy.png",
+    description:
+      "Swag is Art tee with a tonal repeat of the archive wordmark woven through.",
+  },
+
+  {
+slug: "SIA HOODIE",
+    name: "SIA - HOODIE",
+    price: 80,
+    currency: "GBP",
+    isNew: true,
+    inStock: true,
+    image: "https://res.cloudinary.com/dicxujpqy/image/upload/v1788066155/SIA_Hoodie_abjlpm.png",
+    description:
+      "A hoodie-detailed scarf — one statement piece with the archive wordmark woven through.",
+  },
+
+  {
+    slug: "SIA SWEATPANTS",
+    name: "SIA - SWEATPANTS",
+    price: 70,
+    currency: "GBP",
+    isNew: true,
+    inStock: true,
+    image: "https://res.cloudinary.com/dicxujpqy/image/upload/v1788066154/SIA_Sweatpant_ue13go.png",
+    description:
+      "Swag is Art sweatpants with a tonal repeat of the archive wordmark woven through.",
+  }
+
+
 ];

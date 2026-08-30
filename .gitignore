@@ -38,6 +38,10 @@ next-env.d.ts
 agents.md
 *.md
 
+# supabase CLI generated state (pooler-url, project-ref, versions) — secrets-free but machine-local
+supabase/.temp/
+.temp/
+
 # temp / scratch files
 *.tmp
 *.temp

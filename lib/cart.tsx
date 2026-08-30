@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Product } from "@/lib/mock-products";
+import type { Product } from "@/lib/products";
 
 export type CartItem = {
   slug: string;

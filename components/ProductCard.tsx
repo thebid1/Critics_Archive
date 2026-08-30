@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { Product } from "@/lib/mock-products";
+import type { Product } from "@/lib/products";
 import type { MouseEvent } from "react";
 import { useCart } from "@/lib/cart";
 
