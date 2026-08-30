@@ -15,7 +15,7 @@ create table products (
   slug         text not null unique,
   name         text not null,
   price        integer not null check (price >= 0),
-  currency     text not null default 'GBP',
+  currency     text not null default 'NGN',
   description  text not null default '',
   drop_name    text,                    -- e.g. 'Drop 001'
   season       text,                    -- e.g. 'SS26'

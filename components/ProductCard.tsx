@@ -5,11 +5,9 @@ import Link from "next/link";
 import type { Product } from "@/lib/products";
 import type { MouseEvent } from "react";
 import { useCart } from "@/lib/cart";
-
-const CURRENCY_SYMBOL: Record<string, string> = { GBP: "£", USD: "$", EUR: "€" };
+import { formatPrice } from "@/lib/format";
 
 export default function ProductCard({ product }: { product: Product }) {
-  const symbol = CURRENCY_SYMBOL[product.currency] ?? product.currency + " ";
   const { addItem } = useCart();
 
   // In-stock pieces add to the bag (which opens the cart drawer) — this is the
@@ -57,8 +55,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className="mt-3 flex items-baseline justify-between">
         <h3 className="font-label text-xs uppercase tracking-wide text-bone">{product.name}</h3>
         <p className="font-label text-xs text-bone-dim">
-          {symbol}
-          {product.price}
+          {formatPrice(product.currency, product.price)}
         </p>
       </div>
     </Link>

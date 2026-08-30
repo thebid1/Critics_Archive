@@ -37,7 +37,10 @@ if (readError) {
 }
 console.log(`   ✓ got ${products.length} rows via publishable key`);
 for (const p of products) {
-  console.log(`   - ${p.slug} | £${p.price} | img=${p.product_images.length} variants=${p.product_variants.length}`);
+  const sym = p.currency === "NGN" ? "₦" : `${p.currency} `;
+  console.log(
+    `   - ${p.slug} | ${sym}${Number(p.price).toLocaleString("en-NG")} | img=${p.product_images.length} variants=${p.product_variants.length}`
+  );
 }
 
 console.log("2) anon write attempt (must be denied)…");

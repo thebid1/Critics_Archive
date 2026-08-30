@@ -3,8 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
-
-const CURRENCY_SYMBOL: Record<string, string> = { GBP: "£", USD: "$", EUR: "€" };
+import { formatPrice } from "@/lib/format";
 
 export default function CartDrawer() {
   const { items, isOpen, close, count, total, removeItem, setQty } = useCart();
@@ -108,8 +107,7 @@ export default function CartDrawer() {
                         </button>
                       </div>
                       <p className="font-label text-sm text-bone">
-                        {CURRENCY_SYMBOL[item.currency] ?? item.currency}
-                        {item.price * item.qty}
+                        {formatPrice(item.currency, item.price * item.qty)}
                       </p>
                     </div>
                   </div>
@@ -124,7 +122,7 @@ export default function CartDrawer() {
                 </span>
                 <span className="font-label text-base text-bone">
                   {items.length > 0
-                    ? `${CURRENCY_SYMBOL[items[0]!.currency] ?? items[0]!.currency}${total}`
+                    ? formatPrice(items[0]!.currency, total)
                     : "—"}
                 </span>
               </div>

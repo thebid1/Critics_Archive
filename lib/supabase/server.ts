@@ -5,6 +5,20 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
 
 /**
+ * Wraps fetch to disable Next.js Data Cache for Supabase reads.
+ *
+ * Without this, Next caches GET responses during static generation (keyed by
+ * URL) and an `npm run build` can serve stale product rows from a previous
+ * build. Catalogue pages are worth regenerating fresh at every build.
+ */
+function noStoreFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit
+): Promise<Response> {
+  return fetch(input, { ...init, cache: "no-store" });
+}
+
+/**
  * Server-side Supabase client for catalogue reads (Stage 2).
  *
  * Uses the NEXT_PUBLIC publishable key, so it's bound by the same RLS as the
@@ -20,6 +34,7 @@ export function createServerSupabase(): SupabaseClient<Database> {
   }
   return createClient<Database>(supabaseUrl, supabaseKey, {
     auth: { persistSession: false },
+    global: { fetch: noStoreFetch },
   });
 }
 
@@ -37,5 +52,6 @@ export function createAdminSupabase(): SupabaseClient<Database> {
   }
   return createClient<Database>(supabaseUrl, key, {
     auth: { persistSession: false },
+    global: { fetch: noStoreFetch },
   });
 }
