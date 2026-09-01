@@ -20,6 +20,8 @@ export type ProductsRow = {
   price: number;
   currency: string;
   description: string;
+  /** Product-level inventory pool (shared across all sizes). */
+  stock: number;
   drop_name: string | null;
   season: string | null;
   is_new: boolean;
@@ -36,6 +38,7 @@ export type ProductsInsert = {
   price: number;
   currency?: string;
   description?: string;
+  stock?: number;
   drop_name?: string | null;
   season?: string | null;
   is_new?: boolean;
@@ -72,7 +75,6 @@ export type ProductVariantsRow = {
   product_id: string;
   size: string;
   color: string;
-  stock: number;
   created_at: string;
 };
 
@@ -81,7 +83,6 @@ export type ProductVariantsInsert = {
   product_id: string;
   size: string;
   color?: string;
-  stock?: number;
   created_at?: string;
 };
 
@@ -97,12 +98,12 @@ export type OrdersRow = {
     | "cancelled"
     | "refunded";
   email: string;
+  phone: string;
   customer_name: string;
   address_line1: string;
   address_line2: string;
   city: string;
   country: string;
-  postal_code: string;
   subtotal: number;
   shipping_total: number;
   total: number;
@@ -123,12 +124,12 @@ export type OrdersInsert = {
     | "cancelled"
     | "refunded";
   email: string;
+  phone?: string;
   customer_name?: string;
   address_line1?: string;
   address_line2?: string;
   city?: string;
   country?: string;
-  postal_code?: string;
   subtotal?: number;
   shipping_total?: number;
   total?: number;
@@ -242,7 +243,16 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      fulfill_paid_order: {
+        Args: {
+          order_reference: string;
+          paid_amount: number;
+          paid_currency: string;
+        };
+        Returns: string;
+      };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

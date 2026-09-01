@@ -28,7 +28,7 @@ let failed = false;
 console.log("1) public read: published products…");
 const { data: products, error: readError } = await supabase
   .from("products")
-  .select("slug, name, price, currency, is_published, product_images(url), product_variants(stock)")
+  .select("slug, name, price, currency, stock, is_published, product_images(url), product_variants(size)")
   .order("created_at", { ascending: true });
 
 if (readError) {
@@ -39,7 +39,7 @@ console.log(`   ✓ got ${products.length} rows via publishable key`);
 for (const p of products) {
   const sym = p.currency === "NGN" ? "₦" : `${p.currency} `;
   console.log(
-    `   - ${p.slug} | ${sym}${Number(p.price).toLocaleString("en-NG")} | img=${p.product_images.length} variants=${p.product_variants.length}`
+    `   - ${p.slug} | ${sym}${Number(p.price).toLocaleString("en-NG")} | stock=${p.stock} sizes=${p.product_variants.length} img=${p.product_images.length}`
   );
 }
 

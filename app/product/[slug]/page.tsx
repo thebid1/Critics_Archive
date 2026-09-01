@@ -55,6 +55,9 @@ export default async function ProductPage({ params }: Props) {
           <p className="mt-4 font-label text-base text-accent">
             {formatPrice(product.currency, product.price)}
           </p>
+          <p className="mt-2 font-label text-[11px] uppercase tracking-widest2 text-bone-dim">
+            {product.stock > 0 ? `${product.stock} units left` : "Sold out"}
+          </p>
           <p className="mt-6 max-w-md font-body text-sm leading-relaxed text-bone-dim">
             {product.description}
           </p>

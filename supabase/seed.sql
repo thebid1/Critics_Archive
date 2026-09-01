@@ -3,15 +3,15 @@
 -- Currency: NGN (naira). created_at is staggered so catalogue ordering
 -- (created_at ASC) matches the editorial order in lib/mock-products.ts.
 
-insert into products (slug, name, price, currency, description, drop_name, season, is_new, is_published, created_at) values
-  ('black-runway-url-tee',            'BLACK RUNWAY URL TEE',            25000, 'NGN', 'Black heavyweight tee, boxy fit, runway URL graphic across the chest.',                'Drop 001', 'SS26', true, true,  now() - interval '8 minutes'),
-  ('white-runway-url-tee',            'WHITE RUNWAY URL TEE',            25000, 'NGN', 'White heavyweight tee, boxy fit, runway URL graphic across the chest.',                'Drop 001', 'SS26', true, true,  now() - interval '7 minutes'),
-  ('black-swag-is-art-shorts',        'BLACK SWAG IS ART SHORTS',        25000, 'NGN', 'Black relaxed-fit shorts with a tonal SWAG IS ART repeat in the waistband.',            'Drop 001', 'SS26', true, true,  now() - interval '6 minutes'),
-  ('swag-is-art-hoodie-scarf',        'SWAG IS ART HOODIE SCARF',        20000, 'NGN', 'A hoodie-detailed scarf — one statement piece with the archive wordmark woven through.', 'Drop 001', 'SS26', true, true,  now() - interval '5 minutes'),
-  ('crt-domain-expansion-white-tee',  'CRT DOMAIN EXPANSION WHITE TEE',  25000, 'NGN', 'CRT-flare graphic tee, domain-expansion print across the back, oversized cut.',          'Drop 001', 'SS26', true, true,  now() - interval '4 minutes'),
-  ('crt-domain-expansion-black-tee',  'CRT DOMAIN EXPANSION BLACK TEE',  25000, 'NGN', 'Swag is Art tee with a tonal repeat of the archive wordmark woven through.',            'Drop 001', 'SS26', true, true,  now() - interval '3 minutes'),
-  ('sia-hoodie',                      'SIA - HOODIE',                    35000, 'NGN', 'CRITICS hoodie with a tonal repeat of the archive wordmark woven through.',             'Drop 001', 'SS26', true, true,  now() - interval '2 minutes'),
-  ('sia-sweatpants',                  'SIA - SWEATPANTS',                30000, 'NGN', 'Swag is Art sweatpants with a tonal repeat of the archive wordmark woven through.',     'Drop 001', 'SS26', true, true,  now() - interval '1 minute');
+insert into products (slug, name, price, currency, description, stock, drop_name, season, is_new, is_published, created_at) values
+  ('black-runway-url-tee',            'BLACK RUNWAY URL TEE',            25000, 'NGN', 'Black heavyweight tee, boxy fit, runway URL graphic across the chest.',                50, 'Drop 001', 'SS26', true, true,  now() - interval '8 minutes'),
+  ('white-runway-url-tee',            'WHITE RUNWAY URL TEE',            25000, 'NGN', 'White heavyweight tee, boxy fit, runway URL graphic across the chest.',                50, 'Drop 001', 'SS26', true, true,  now() - interval '7 minutes'),
+  ('black-swag-is-art-shorts',        'BLACK SWAG IS ART SHORTS',        25000, 'NGN', 'Black relaxed-fit shorts with a tonal SWAG IS ART repeat in the waistband.',            50, 'Drop 001', 'SS26', true, true,  now() - interval '6 minutes'),
+  ('swag-is-art-hoodie-scarf',        'SWAG IS ART HOODIE SCARF',        20000, 'NGN', 'A hoodie-detailed scarf — one statement piece with the archive wordmark woven through.', 50, 'Drop 001', 'SS26', true, true,  now() - interval '5 minutes'),
+  ('crt-domain-expansion-white-tee',  'CRT DOMAIN EXPANSION WHITE TEE',  25000, 'NGN', 'CRT-flare graphic tee, domain-expansion print across the back, oversized cut.',          50, 'Drop 001', 'SS26', true, true,  now() - interval '4 minutes'),
+  ('crt-domain-expansion-black-tee',  'CRT DOMAIN EXPANSION BLACK TEE',  25000, 'NGN', 'Swag is Art tee with a tonal repeat of the archive wordmark woven through.',            50, 'Drop 001', 'SS26', true, true,  now() - interval '3 minutes'),
+  ('sia-hoodie',                      'SIA - HOODIE',                    35000, 'NGN', 'CRITICS hoodie with a tonal repeat of the archive wordmark woven through.',             50, 'Drop 001', 'SS26', true, true,  now() - interval '2 minutes'),
+  ('sia-sweatpants',                  'SIA - SWEATPANTS',                30000, 'NGN', 'Swag is Art sweatpants with a tonal repeat of the archive wordmark woven through.',     50, 'Drop 001', 'SS26', true, true,  now() - interval '1 minute');
 
 -- Primary images (position 0 = card image). More angles can be added later.
 insert into product_images (product_id, url, position)
@@ -46,41 +46,40 @@ insert into product_images (product_id, url, position)
 select id, 'https://res.cloudinary.com/dicxujpqy/image/upload/v1788066154/SIA_Sweatpant_ue13go.png', 0
 from products where slug = 'sia-sweatpants';
 
--- Variants (size/stock) — sizes now match the client's size charts exactly.
+-- Product sizes (purchase options ONLY — inventory is product-level, products.stock).
 -- Tees: S–XXL · Shorts: L–XXL · Hoodie: S–XX · Sweatpants: S–XXL · Scarf: OS.
--- New tail sizes (XX/XXL) seeded with modest stock (2) — tune in admin later.
-insert into product_variants (product_id, size, stock)
-select id, s.size, s.stock
+insert into product_variants (product_id, size)
+select id, s.size
 from products
 cross join (values
-  ('S', 8), ('M', 10), ('L', 6), ('XL', 3), ('XXL', 2)
-) as s(size, stock)
+  ('S'), ('M'), ('L'), ('XL'), ('XXL')
+) as s(size)
 where slug in ('black-runway-url-tee', 'white-runway-url-tee', 'crt-domain-expansion-white-tee', 'crt-domain-expansion-black-tee');
 
-insert into product_variants (product_id, size, stock)
-select id, s.size, s.stock
+insert into product_variants (product_id, size)
+select id, s.size
 from products
 cross join (values
-  ('L', 6), ('XL', 3), ('XXL', 2)
-) as s(size, stock)
+  ('L'), ('XL'), ('XXL')
+) as s(size)
 where slug = 'black-swag-is-art-shorts';
 
-insert into product_variants (product_id, size, stock)
-select id, s.size, s.stock
+insert into product_variants (product_id, size)
+select id, s.size
 from products
 cross join (values
-  ('S', 4), ('M', 5), ('L', 4), ('XL', 2), ('XX', 2)
-) as s(size, stock)
+  ('S'), ('M'), ('L'), ('XL'), ('XX')
+) as s(size)
 where slug = 'sia-hoodie';
 
-insert into product_variants (product_id, size, stock)
-select id, s.size, s.stock
+insert into product_variants (product_id, size)
+select id, s.size
 from products
 cross join (values
-  ('S', 4), ('M', 5), ('L', 4), ('XL', 2), ('XXL', 2)
-) as s(size, stock)
+  ('S'), ('M'), ('L'), ('XL'), ('XXL')
+) as s(size)
 where slug = 'sia-sweatpants';
 
-insert into product_variants (product_id, size, stock)
-select id, 'OS', 12
+insert into product_variants (product_id, size)
+select id, 'OS'
 from products where slug = 'swag-is-art-hoodie-scarf';

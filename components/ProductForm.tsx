@@ -7,18 +7,18 @@ import type { ProductDetail } from "@/lib/products";
 
 /**
  * Size selector + Add to bag / Buy now for the product page.
+ * Inventory is ONE pool per product (e.g. 50 hoodies total, any size draws from it).
  * - Single-size pieces (scarf): no size step at all.
  * - Multi-size pieces: pick a size before either button enables.
  * - Add to bag → adds to the cart and opens the drawer.
  * - Buy now → adds to the cart (drawer stays shut) and goes straight to /checkout.
- * - Zero-stock sizes render struck-out + disabled; zero-stock product = "Sold out".
+ * - Product at 0 stock = "Sold out" (buttons disabled).
  */
 export default function ProductForm({ product }: { product: ProductDetail }) {
   const { addItem } = useCart();
   const router = useRouter();
   const sizes = product.sizes;
-  const available = sizes.filter((s) => s.stock > 0);
-  const soldOut = available.length === 0;
+  const soldOut = product.stock <= 0;
   const singleSize = sizes.length === 1;
 
   const [selected, setSelected] = useState<string | null>(null);
@@ -26,12 +26,12 @@ export default function ProductForm({ product }: { product: ProductDetail }) {
 
   function handleAddToBag() {
     if (!canAct) return;
-    addItem(product, singleSize ? undefined : selected!, true);
+    addItem(product, singleSize ? undefined : selected!, true, product.stock);
   }
 
   function handleBuyNow() {
     if (!canAct) return;
-    addItem(product, singleSize ? undefined : selected!, false);
+    addItem(product, singleSize ? undefined : selected!, false, product.stock);
     router.push("/checkout");
   }
 
@@ -44,21 +44,18 @@ export default function ProductForm({ product }: { product: ProductDetail }) {
           </p>
           <div className="flex flex-wrap gap-2">
             {sizes.map((s) => {
-              const unavailable = s.stock <= 0;
               const isSelected = selected === s.size;
               return (
                 <button
                   key={s.size}
                   type="button"
-                  disabled={unavailable}
+                  disabled={soldOut}
                   onClick={() => setSelected(s.size)}
                   aria-pressed={isSelected}
                   className={`border px-4 py-2 font-label text-xs uppercase tracking-widest2 transition-colors ${
-                    unavailable
-                      ? "line-through border-hairline/50 text-bone-dim/40"
-                      : isSelected
-                        ? "border-accent bg-accent text-ink"
-                        : "border-hairline text-bone hover:border-bone"
+                    isSelected
+                      ? "border-accent bg-accent text-ink"
+                      : "border-hairline text-bone hover:border-bone"
                   }`}
                 >
                   {s.size}

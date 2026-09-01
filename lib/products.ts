@@ -17,14 +17,15 @@ export type Product = {
   currency: string;
   isNew: boolean;
   inStock: boolean;
+  /** Product-level inventory pool (shared across all sizes). */
+  stock: number;
   image: string;
   description: string;
 };
 
-/** A purchasable size option on the product page. */
+/** A purchasable size option on the product page (sizes carry no stock). */
 export type ProductVariant = {
   size: string;
-  stock: number;
 };
 
 /** Everything the product detail page needs (gallery + sizing). */
@@ -37,17 +38,13 @@ export type ProductDetail = Product & {
 
 type ProductRowWithRelations = ProductsRow & {
   product_images?: Pick<ProductImagesRow, "url" | "position">[];
-  product_variants?: Pick<ProductVariantsRow, "stock">[];
+  product_variants?: Pick<ProductVariantsRow, "size">[];
 };
 
 /** Maps a Supabase product row (+ nested images/variants) to the display shape. */
 export function mapProductRow(row: ProductRowWithRelations): Product {
   const images = [...(row.product_images ?? [])].sort(
     (a, b) => (a.position ?? 0) - (b.position ?? 0)
-  );
-  const totalStock = (row.product_variants ?? []).reduce(
-    (sum, v) => sum + (v.stock ?? 0),
-    0
   );
 
   return {
@@ -56,16 +53,17 @@ export function mapProductRow(row: ProductRowWithRelations): Product {
     price: row.price,
     currency: row.currency,
     isNew: row.is_new,
-    inStock: totalStock > 0,
+    inStock: row.stock > 0,
+    stock: row.stock,
     image: images[0]?.url ?? "",
     description: row.description,
   };
 }
 
-// Columns used by every catalogue listing so galleries/variants come in one roundtrip.
+// Columns used by every catalogue listing so galleries/sizes come in one roundtrip.
 const LISTING_SELECT =
-  "id, slug, name, price, currency, description, is_new, " +
-  "product_images(url, position), product_variants(stock)";
+  "id, slug, name, price, currency, description, is_new, stock, " +
+  "product_images(url, position), product_variants(size)";
 
 /** Live homepage/shop listing: published, non-archived products (RLS-bound). */
 export async function listPublishedProducts(limit = 50): Promise<Product[]> {
@@ -97,8 +95,8 @@ export async function getProductDetailBySlug(
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id, slug, name, price, currency, description, is_new, drop_name, season, " +
-        "product_images(url, position), product_variants(size, stock)"
+      "id, slug, name, price, currency, description, is_new, stock, drop_name, season, " +
+        "product_images(url, position), product_variants(size)"
     )
     .eq("slug", slug)
     .eq("is_published", true)
@@ -117,10 +115,11 @@ export async function getProductDetailBySlug(
     currency: string;
     description: string;
     is_new: boolean;
+    stock: number;
     drop_name: string | null;
     season: string | null;
     product_images: { url: string; position: number }[];
-    product_variants: { size: string; stock: number }[];
+    product_variants: { size: string }[];
   };
 
   const base = mapProductRow(row as unknown as ProductRowWithRelations);
@@ -129,7 +128,6 @@ export async function getProductDetailBySlug(
     .map((img) => img.url);
   const sizes = (row.product_variants ?? []).map((v) => ({
     size: v.size,
-    stock: v.stock ?? 0,
   }));
 
   return {

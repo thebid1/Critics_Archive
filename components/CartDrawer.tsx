@@ -2,11 +2,22 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect } from "react";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
 
 export default function CartDrawer() {
   const { items, isOpen, close, count, total, removeItem, setQty } = useCart();
+
+  // Lock background scroll while the drawer is open.
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen]);
 
   return (
     <>
@@ -58,7 +69,9 @@ export default function CartDrawer() {
         ) : (
           <>
             <ul className="flex-1 divide-y divide-hairline overflow-y-auto px-6">
-              {items.map((item) => (
+              {items.map((item) => {
+                const atMax = item.qty >= item.maxQty;
+                return (
                 <li key={item.key} className="flex gap-4 py-5">
                   <div className="relative h-20 w-16 shrink-0 overflow-hidden bg-ink">
                     <Image
@@ -108,7 +121,8 @@ export default function CartDrawer() {
                           type="button"
                           onClick={() => setQty(item.key, item.qty + 1)}
                           aria-label="Increase quantity"
-                          className="px-2.5 py-1 font-label text-bone-dim transition-colors hover:text-accent"
+                          disabled={atMax}
+                          className="px-2.5 py-1 font-label text-bone-dim transition-colors hover:text-accent disabled:cursor-not-allowed disabled:text-bone-dim/30 disabled:hover:text-bone-dim/30"
                         >
                           +
                         </button>
@@ -119,7 +133,8 @@ export default function CartDrawer() {
                     </div>
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
 
             <footer className="border-t border-hairline px-6 py-5">
