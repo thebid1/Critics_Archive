@@ -87,6 +87,8 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createAdminSupabase();
+    // Release abandoned reservations before checking out new customers.
+    await supabase.rpc("expire_pending_orders", { p_max_age_hours: 24 });
     const { data, error: rpcError } = await supabase.rpc("create_order", {
       p_email: body.email.trim(),
       p_phone: body.phone.trim(),

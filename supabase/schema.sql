@@ -270,29 +270,6 @@ $$ language plpgsql security definer set search_path = public;
 revoke execute on function expire_pending_orders(integer) from public, anon, authenticated;
 grant execute on function expire_pending_orders(integer) to service_role;
 
--- Release a reservation immediately when the customer cancels before payment.
-create or replace function cancel_pending_order(order_reference text)
-returns text as $$
-declare
-  target_order orders%rowtype;
-  item record;
-begin
-  select * into target_order from orders where reference = order_reference for update;
-  if not found then raise exception 'Order not found'; end if;
-  if target_order.status in ('paid', 'fulfilled') then return 'already_paid'; end if;
-  if target_order.status <> 'pending' then return 'already_cancelled'; end if;
-
-  for item in select product_id, qty from order_items where order_id = target_order.id loop
-    update products set stock = stock + item.qty where id = item.product_id;
-  end loop;
-  update orders set status = 'cancelled' where id = target_order.id;
-  return 'cancelled';
-end;
-$$ language plpgsql security definer set search_path = public;
-
-revoke execute on function cancel_pending_order(text) from public, anon, authenticated;
-grant execute on function cancel_pending_order(text) to service_role;
-
 -- ---------------------------------------------------------------------------
 -- Row Level Security
 -- ---------------------------------------------------------------------------

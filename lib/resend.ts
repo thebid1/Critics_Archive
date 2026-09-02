@@ -146,11 +146,13 @@ export async function sendOrderConfirmationEmail(
             <p style="margin:0;font-size:12px;letter-spacing:1px;color:#8a877e">DELIVER TO</p>
             <p style="margin:6px 0 0;font-size:14px;color:#333;line-height:1.6">${safe.customerName}<br />${address}</p>
           </td></tr>
-          <tr><td style="padding:16px 32px 32px">
-            <img src="${FOOTER_LOGO_IMAGE}" alt="Critics Archive logo" width="40" height="40" style="display:block;width:40px;height:40px;object-fit:contain" />
-            <p style="margin:10px 0 0;font-size:11px;color:#8a877e;letter-spacing:1px">CRITICS ARCHIVE — SWAG IS ART.</p>
-            <p style="margin:8px 0 0;font-size:12px;color:#555">Questions? Contact <a href="mailto:support@criticsarchive.com" style="color:#333">support@criticsarchive.com</a></p>
-          </td></tr>
+          <tr>
+            <td bgcolor="#000000" style="padding:16px 32px 32px;background:#000000 !important;background-color:#000000 !important;color:#ffffff !important">
+              <img src="${FOOTER_LOGO_IMAGE}" alt="Critics Archive logo" width="40" height="40" style="display:block;width:40px;height:40px;object-fit:contain" />
+              <p style="margin:10px 0 0;font-size:11px;color:#f4f3ed;letter-spacing:1px">CRITICS ARCHIVE — SWAG IS ART.</p>
+              <p style="margin:8px 0 0;font-size:12px;color:#f4f3ed">Questions? Contact <a href="mailto:support@criticsarchive.com" style="color:#ffffff">support@criticsarchive.com</a></p>
+            </td>
+          </tr>
         </table>
       </td></tr>
     </table>

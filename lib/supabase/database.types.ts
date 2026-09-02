@@ -275,12 +275,6 @@ export type Database = {
         };
         Returns: number;
       };
-      cancel_pending_order: {
-        Args: {
-          order_reference: string;
-        };
-        Returns: string;
-      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

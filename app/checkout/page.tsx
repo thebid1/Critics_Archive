@@ -125,9 +125,6 @@ function CheckoutPageContent() {
       if (!response.ok || !result.accessCode || !result.reference) throw new Error(result.error ?? "We could not start payment.");
       if (!paystackReady || !window.PaystackPop) throw new Error("Payment checkout is still loading. Please try again.");
       const popup = new window.PaystackPop();
-      const releaseReservation = () => {
-        void fetch("/api/paystack/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: result.reference }) });
-      };
       popup.resumeTransaction(result.accessCode, {
         onSuccess: (transaction) => {
           const paidReference = transaction.reference ?? transaction.trxref ?? result.reference;
@@ -145,8 +142,8 @@ function CheckoutPageContent() {
             .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Payment verification failed."))
             .finally(() => setBusy(false));
         },
-        onCancel: () => { releaseReservation(); setError("Payment was cancelled. You can try again when ready."); setBusy(false); },
-        onError: (paymentError) => { releaseReservation(); setError(paymentError.message ?? "Paystack could not load the payment."); setBusy(false); },
+        onCancel: () => { setError("Payment was cancelled. Your reservation will be released automatically if payment does not complete."); setBusy(false); },
+        onError: (paymentError) => { setError(paymentError.message ?? "Paystack could not load the payment. Your reservation will be released automatically if payment does not complete."); setBusy(false); },
       });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "We could not start payment.");

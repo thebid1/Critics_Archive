@@ -16,6 +16,10 @@ export const dynamic = "force-dynamic";
 
 
 export async function POST(request: Request) {
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+  if (contentLength > 1_048_576) {
+    return NextResponse.json({ error: "Request is too large." }, { status: 413 });
+  }
   const rawBody = await request.text();
   const signature = request.headers.get("x-paystack-signature") ?? "";
   if (!isValidPaystackSignature(rawBody, signature)) {
