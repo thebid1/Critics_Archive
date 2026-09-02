@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { fromPaystackMinorUnits, isValidPaystackSignature } from "@/lib/paystack";
+import { sendOrderConfirmationForReference } from "@/lib/order-confirmation";
 
 export const dynamic = "force-dynamic";
+
+
+
+
+
+
+
+
+
+
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -10,18 +21,49 @@ export async function POST(request: Request) {
   if (!isValidPaystackSignature(rawBody, signature)) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
   }
+
+  let event: { event?: string; data?: { status?: string; reference?: string; amount?: number; currency?: string } };
   try {
-    const event = JSON.parse(rawBody) as { event?: string; data?: { status?: string; reference?: string; amount?: number; currency?: string } };
-    if (event.event !== "charge.success") return NextResponse.json({ received: true });
-    const payment = event.data;
-    if (!payment?.reference || payment.status !== "success" || typeof payment.amount !== "number" || !payment.currency) {
-      return NextResponse.json({ error: "Invalid payment event." }, { status: 400 });
+    event = JSON.parse(rawBody);
+  } catch {
+    // Signed but unparseable — acknowledge without retry.
+    return NextResponse.json({ received: true });
+  }
+
+  if (event.event !== "charge.success") {
+    return NextResponse.json({ received: true });
+  }
+
+  const payment = event.data;
+  if (!payment?.reference || payment.status !== "success" || typeof payment.amount !== "number" || !payment.currency) {
+    // Paystack delivered a malformed success event; acknowledge so it stops retrying.
+    console.error("Paystack webhook: malformed charge.success payload", { payment });
+    return NextResponse.json({ received: true });
+  }
+
+  try {
+    const { error } = await createAdminSupabase().rpc("fulfill_paid_order", {
+      order_reference: payment.reference,
+      paid_amount: fromPaystackMinorUnits(payment.amount, payment.currency),
+      paid_currency: payment.currency,
+    });
+    if (error) {
+      // Log and acknowledge: a fulfillment failure (e.g. amount mismatch) won't be
+      // fixed by Paystack retrying forever. The verify/callback path will surface it
+      // to the customer; support can reconcile via the order reference.
+      console.error("Paystack webhook: fulfillment skipped", { reference: payment.reference, error: error.message });
+    } else {
+      // Payment confirmed and order marked paid -> send the confirmation email.
+      // Best-effort; failures never change the successful payment response.
+      try {
+        await sendOrderConfirmationForReference(payment.reference);
+      } catch (emailError: unknown) {
+        console.error("Confirmation email: unexpected failure", emailError instanceof Error ? emailError.message : "Unknown error");
+      }
     }
-    const { error } = await createAdminSupabase().rpc("fulfill_paid_order", { order_reference: payment.reference, paid_amount: fromPaystackMinorUnits(payment.amount, payment.currency), paid_currency: payment.currency });
-    if (error) throw error;
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error("Paystack webhook failed", error instanceof Error ? error.message : "Unknown error");
-    return NextResponse.json({ error: "Webhook processing failed." }, { status: 500 });
+    console.error("Paystack webhook: unexpected error", error instanceof Error ? error.message : "Unknown error");
+    return NextResponse.json({ received: true });
   }
 }

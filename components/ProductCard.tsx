@@ -5,7 +5,7 @@ import { formatPrice } from "@/lib/format";
 
 // Every piece routes to its product page — that's where size selection and
 // "Add to bag" happen now that pieces have real size options (Stage 3).
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
   return (
     <Link href={`/product/${product.slug}`} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden bg-ink-raised">
@@ -13,6 +13,7 @@ export default function ProductCard({ product }: { product: Product }) {
           src={product.image}
           alt={product.name}
           fill
+          priority={priority}
           sizes="(min-width: 1024px) 380px, 100vw"
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />

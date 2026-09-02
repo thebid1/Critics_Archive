@@ -110,6 +110,7 @@ export type OrdersRow = {
   currency: string;
   payment_provider: string;
   paid_at: string | null;
+  confirmation_email_sent_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -136,6 +137,7 @@ export type OrdersInsert = {
   currency?: string;
   payment_provider?: string;
   paid_at?: string | null;
+  confirmation_email_sent_at?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -249,6 +251,33 @@ export type Database = {
           order_reference: string;
           paid_amount: number;
           paid_currency: string;
+        };
+        Returns: string;
+      };
+      create_order: {
+        Args: {
+          p_email: string;
+          p_phone: string;
+          p_customer_name: string;
+          p_address_line1: string;
+          p_address_line2: string;
+          p_city: string;
+          p_country: string;
+          p_delivery_fee: number;
+          p_currency: string;
+          p_items: Json; // jsonb array of { slug, size, qty }
+        };
+        Returns: Json;
+      };
+      expire_pending_orders: {
+        Args: {
+          p_max_age_hours?: number;
+        };
+        Returns: number;
+      };
+      cancel_pending_order: {
+        Args: {
+          order_reference: string;
         };
         Returns: string;
       };

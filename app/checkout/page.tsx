@@ -17,7 +17,6 @@ const checkoutFields: Array<[keyof CheckoutForm, string, string]> = [
   ["addressLine1", "Address", "text"],
   ["addressLine2", "Apartment / suite (optional)", "text"],
   ["city", "City", "text"],
-  ["country", "Country code", "text"],
 ];
 
 type CheckoutForm = {
@@ -27,8 +26,9 @@ type CheckoutForm = {
   addressLine1: string;
   addressLine2: string;
   city: string;
-  country: string;
 };
+
+const DELIVERY_FEE = 7000;
 
 declare global {
   interface Window {
@@ -48,13 +48,14 @@ declare global {
 function CheckoutPageContent() {
   const { items, count, total, clearCart, removeItem, setQty } = useCart();
   const searchParams = useSearchParams();
-  const [form, setForm] = useState<CheckoutForm>({ email: "", phone: "", customerName: "", addressLine1: "", addressLine2: "", city: "", country: "NG" });
+  const [form, setForm] = useState<CheckoutForm>({ email: "", phone: "", customerName: "", addressLine1: "", addressLine2: "", city: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [paid, setPaid] = useState(false);
   const [pending, setPending] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
   const [paystackReady, setPaystackReady] = useState(false);
+  const [deliverySelected, setDeliverySelected] = useState(false);
 
   useEffect(() => {
     setReference(searchParams.get("reference"));
@@ -118,11 +119,15 @@ function CheckoutPageContent() {
     setError("");
     setBusy(true);
     try {
-      const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, items: items.map(({ slug, size, qty }) => ({ slug, size, qty })) }) });
+      if (!deliverySelected) throw new Error("Select delivery before continuing.");
+      const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, deliverySelected, items: items.map(({ slug, size, qty }) => ({ slug, size, qty })) }) });
       const result = (await response.json()) as { accessCode?: string; reference?: string; error?: string };
       if (!response.ok || !result.accessCode || !result.reference) throw new Error(result.error ?? "We could not start payment.");
       if (!paystackReady || !window.PaystackPop) throw new Error("Payment checkout is still loading. Please try again.");
       const popup = new window.PaystackPop();
+      const releaseReservation = () => {
+        void fetch("/api/paystack/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reference: result.reference }) });
+      };
       popup.resumeTransaction(result.accessCode, {
         onSuccess: (transaction) => {
           const paidReference = transaction.reference ?? transaction.trxref ?? result.reference;
@@ -140,8 +145,8 @@ function CheckoutPageContent() {
             .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Payment verification failed."))
             .finally(() => setBusy(false));
         },
-        onCancel: () => { setError("Payment was cancelled."); setBusy(false); },
-        onError: (paymentError) => { setError(paymentError.message ?? "Paystack could not load the payment."); setBusy(false); },
+        onCancel: () => { releaseReservation(); setError("Payment was cancelled. You can try again when ready."); setBusy(false); },
+        onError: (paymentError) => { releaseReservation(); setError(paymentError.message ?? "Paystack could not load the payment."); setBusy(false); },
       });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "We could not start payment.");
@@ -241,6 +246,30 @@ function CheckoutPageContent() {
                 </span>
               </div>
 
+              <div className="mt-4 border border-hairline p-4">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={deliverySelected}
+                    onChange={(event) => setDeliverySelected(event.target.checked)}
+                    className="mt-1 h-4 w-4 accent-accent"
+                  />
+                  <span className="font-label text-xs uppercase tracking-wide text-bone">
+                    Delivery — {formatPrice("NGN", DELIVERY_FEE)}
+                    <span className="mt-1 block font-body text-xs normal-case tracking-normal text-bone-dim">
+                      Delivery is required. Pickup is not available.
+                    </span>
+                  </span>
+                </label>
+              </div>
+
+              <div className="mt-5 flex items-baseline justify-between border-t border-hairline pt-5">
+                <span className="font-label text-xs uppercase tracking-widest2 text-bone-dim">Total</span>
+                <span className="font-label text-base text-bone">
+                  {items.length > 0 ? formatPrice(items[0]!.currency, total + DELIVERY_FEE) : "—"}
+                </span>
+              </div>
+
               <form onSubmit={submit} className="mt-10 border border-hairline p-6">
                 <p className="font-label text-xs uppercase tracking-widest2 text-bone">Shipping details</p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -252,8 +281,8 @@ function CheckoutPageContent() {
                   ))}
                 </div>
                 {error && <p role="alert" className="mt-5 font-body text-sm text-red-300">{error}</p>}
-                <button type="submit" disabled={busy || !paystackReady} className="mt-6 w-full bg-bone px-6 py-3.5 font-label text-xs uppercase tracking-widest2 text-ink transition-colors hover:bg-accent disabled:cursor-wait disabled:opacity-60">
-                  {busy ? "Starting payment..." : paystackReady ? "Pay with Paystack" : "Loading payment..."}
+                <button type="submit" disabled={busy || !paystackReady || !deliverySelected} className="mt-6 w-full bg-bone px-6 py-3.5 font-label text-xs uppercase tracking-widest2 text-ink transition-colors hover:bg-accent disabled:cursor-wait disabled:opacity-60">
+                  {busy ? "Starting payment..." : !deliverySelected ? "Select delivery to continue" : paystackReady ? "Pay with Paystack" : "Loading payment..."}
                 </button>
               </form>
             </>

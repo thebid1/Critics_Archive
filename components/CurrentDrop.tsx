@@ -50,9 +50,9 @@ export default async function CurrentDrop() {
           aria-label="Drop 001 products — scroll horizontally"
           className="scrollbar-slim flex snap-x snap-mandatory gap-6 overflow-x-auto pb-6 scroll-smooth"
         >
-          {products.map((product) => (
+          {products.map((product, index) => (
             <div key={product.slug} className="w-[320px] shrink-0 snap-start xl:w-[350px] 2xl:w-[380px]">
-              <ProductCard product={product} />
+              <ProductCard product={product} priority={index === 0} />
             </div>
           ))}
         </div>
@@ -64,8 +64,8 @@ export default async function CurrentDrop() {
 
       {/* Mobile/tablet — stacked grid */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-6 lg:hidden">
-        {products.map((product) => (
-          <ProductCard key={product.slug} product={product} />
+        {products.map((product, index) => (
+          <ProductCard key={product.slug} product={product} priority={index === 0} />
         ))}
       </div>
     </section>
