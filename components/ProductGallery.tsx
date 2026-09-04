@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { cloudinaryOptimized } from "@/lib/cloudinary";
 
 /**
  * Product gallery — primary image with a thumbnail selector. All pieces
@@ -17,7 +18,7 @@ export default function ProductGallery({ images, name }: { images: string[]; nam
       <div className="relative aspect-[4/5] overflow-hidden bg-ink-raised">
         {src ? (
           <Image
-            src={src}
+            src={cloudinaryOptimized(src)}
             alt={name}
             fill
             priority
@@ -42,7 +43,7 @@ export default function ProductGallery({ images, name }: { images: string[]; nam
                 i === active ? "border-accent" : "border-hairline opacity-70 hover:opacity-100"
               }`}
             >
-              <Image src={img} alt="" fill sizes="64px" className="object-cover" />
+              <Image src={cloudinaryOptimized(img, { width: 160 })} alt="" fill sizes="64px" className="object-cover" />
             </button>
           ))}
         </div>

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Product } from "@/lib/products";
 import { formatPrice } from "@/lib/format";
+import { cloudinaryOptimized } from "@/lib/cloudinary";
 
 // Every piece routes to its product page — that's where size selection and
 // "Add to bag" happen now that pieces have real size options (Stage 3).
@@ -10,7 +11,7 @@ export default function ProductCard({ product, priority = false }: { product: Pr
     <Link href={`/product/${product.slug}`} className="group block">
       <div className="relative aspect-[4/5] overflow-hidden bg-ink-raised">
         <Image
-          src={product.image}
+          src={cloudinaryOptimized(product.image)}
           alt={product.name}
           fill
           priority={priority}

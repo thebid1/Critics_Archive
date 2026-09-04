@@ -7,6 +7,7 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useCart } from "@/lib/cart";
 import { formatPrice } from "@/lib/format";
+import { cloudinaryOptimized } from "@/lib/cloudinary";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -55,7 +56,16 @@ function CheckoutPageContent() {
   const [pending, setPending] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
   const [paystackReady, setPaystackReady] = useState(false);
+  const [paystackSlow, setPaystackSlow] = useState(false);
   const [deliverySelected, setDeliverySelected] = useState(false);
+
+  // Resilient loading: if InlineJS hasn't loaded after 10s, offer a retry
+  // instead of leaving the user on a silent dead-end.
+  useEffect(() => {
+    if (paystackReady) return;
+    const id = window.setTimeout(() => setPaystackSlow(true), 10_000);
+    return () => window.clearTimeout(id);
+  }, [paystackReady]);
 
   useEffect(() => {
     setReference(searchParams.get("reference"));
@@ -197,12 +207,27 @@ function CheckoutPageContent() {
                 Review your bag — {count} {count === 1 ? "item" : "items"}
               </p>
 
+              {paystackSlow && !paystackReady && (
+                <div className="mt-4 border border-amber-400/40 bg-amber-400/10 p-4">
+                  <p className="font-label text-xs uppercase tracking-widest2 text-amber-300">
+                    Payment is taking longer than usual to load.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="mt-3 border border-amber-300 px-5 py-2 font-label text-xs uppercase tracking-widest2 text-amber-300 transition-colors hover:bg-amber-300 hover:text-ink"
+                  >
+                    Retry loading payment
+                  </button>
+                </div>
+              )}
+
               <ul className="mt-4 divide-y divide-hairline">
                 {items.map((item) => (
                   <li key={item.key} className="flex gap-4 py-5">
                     <div className="relative h-24 w-20 shrink-0 overflow-hidden bg-ink-raised">
                       <Image
-                        src={item.image}
+                        src={cloudinaryOptimized(item.image, { width: 160 })}
                         alt={item.name}
                         fill
                         sizes="80px"

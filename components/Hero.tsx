@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { cloudinaryOptimized } from "@/lib/cloudinary";
 
 // Living slideshow assets for the hero. `res.cloudinary.com` is allow-listed in
 // next.config.js `images.remotePatterns`.
@@ -42,10 +43,10 @@ export default function Hero() {
         {HERO_IMAGES.map((src, i) => (
           <Image
             key={src}
-            src={src}
+            src={cloudinaryOptimized(src)}
             alt=""
             fill
-            priority
+            priority={i === 0}
             sizes="100vw"
             style={{ transitionDuration: `${FADE_MS}ms` }}
             className={`object-cover transition-opacity ease-in-out ${
