@@ -35,7 +35,7 @@ export default async function AdminProductsPage({
           name="q"
           defaultValue={q}
           placeholder="Search by name or slug…"
-          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none"
+          className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-gray-500 focus:outline-none sm:text-sm"
         />
         <Button type="submit" variant="secondary">
           Search
