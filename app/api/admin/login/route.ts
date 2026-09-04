@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminAuthClient } from "@/lib/supabase/admin-auth";
-import { isAllowedAdminEmail } from "@/lib/admin/allowlist";
+import { hasAnyAllowedEmails, isAllowedAdminEmail } from "@/lib/admin/allowlist";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +13,11 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * client gets the same generic success message either way.
  */
 export async function POST(request: Request) {
+  // Loud, server-side hint when nobody is configured to sign in at all.
+  if (!hasAnyAllowedEmails()) {
+    console.error("ADMIN_ALLOWED_EMAILS is empty — no admin can sign in until it is set.");
+  }
+
   const ip = getClientIp(request);
   const limiter = rateLimit({ ip, limit: 5, windowMs: 60_000 });
   if (!limiter.ok) {
@@ -58,10 +63,16 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createAdminAuthClient();
-    // Derive the redirect origin from the REQUEST itself, not the env var: the
-    // magic link must return to wherever the admin actually is (localhost in
-    // dev, the real domain in prod). NEXT_PUBLIC_SITE_URL is only a fallback.
-    const origin = new URL(request.url).origin;
+    // Resolve the PUBLIC origin deterministically. On Vercel, the real host/proto
+    // arrive in x-forwarded-* headers; reading them (rather than request.url or
+    // an env var) guarantees the magic link returns to prod — never localhost.
+    const forwardedHost =
+      request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+    const forwardedProto = request.headers.get("x-forwarded-proto");
+    const origin =
+      forwardedHost && forwardedProto
+        ? `${forwardedProto}://${forwardedHost}`
+        : new URL(request.url).origin;
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -69,13 +80,21 @@ export async function POST(request: Request) {
       },
     });
     if (error) {
-      console.error("Magic link send failed", { email, error: error.message });
-      // Same generic shape on failure so enumeration stays impractical.
-      return NextResponse.json({ ok: true, message: "If your email is authorized, a sign-in link is on its way." });
+      // This email IS allow-listed, so surfacing the real reason is safe (the
+      // person is an admin) and directly actionable — "redirect_to not allowed",
+      // email provider off, rate limited, custom SMTP missing, etc.
+      console.error("Magic link send failed", { error: error.message });
+      return NextResponse.json(
+        { ok: false, error: `Sign-in link could not be sent: ${error.message}` },
+        { status: 500 }
+      );
     }
     return NextResponse.json({ ok: true, message: "If your email is authorized, a sign-in link is on its way." });
   } catch (reason) {
     console.error("Magic link send error", reason instanceof Error ? reason.message : "Unknown error");
-    return NextResponse.json({ ok: true, message: "If your email is authorized, a sign-in link is on its way." });
+    return NextResponse.json(
+      { ok: false, error: "Sign-in link could not be sent. Please try again." },
+      { status: 500 }
+    );
   }
 }
