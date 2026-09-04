@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { fromPaystackMinorUnits, verifyPaystackTransaction } from "@/lib/paystack";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
-import { sendOrderConfirmationForReference } from "@/lib/order-confirmation";
+import { sendOrderNotificationsForReference } from "@/lib/order-confirmation";
 import { verifySchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -74,9 +74,9 @@ export async function POST(request: Request) {
     });
     if (claimed === true) {
       try {
-        await sendOrderConfirmationForReference(reference);
+        await sendOrderNotificationsForReference(reference);
       } catch (emailError: unknown) {
-        console.error("Confirmation email: unexpected failure", emailError instanceof Error ? emailError.message : "Unknown error");
+        console.error("Order emails: unexpected failure", emailError instanceof Error ? emailError.message : "Unknown error");
       }
     }
     return NextResponse.json({ status: data === "already_paid" ? "paid" : data });

@@ -278,3 +278,125 @@ export async function sendOrderShippedEmail(
     return reason instanceof Error ? reason.message : "Unknown email send failure";
   }
 }
+
+/**
+ * "New order" notification to the STORE OWNER (not the customer). Sent to
+ * ORDERS_NOTIFY_EMAIL (comma-separated) when a payment succeeds, so the client
+ * knows the moment someone purchases. Fails silently (returns null) if no owner
+ * address is configured.
+ */
+export async function sendNewOrderNotificationEmail(
+  order: OrderConfirmation & { orderId: string }
+): Promise<string | null> {
+  const client = getResend();
+  const notifyTo = (process.env.ORDERS_NOTIFY_EMAIL ?? "")
+    .split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+
+  if (!client || !fromEmail) {
+    return "Resend is not configured (RESEND_API_KEY / RESEND_FROM_EMAIL)";
+  }
+  if (notifyTo.length === 0) {
+    return null; // no owner address configured — not an error
+  }
+
+  const safe = {
+    reference: escapeHtml(order.reference),
+    customerName: escapeHtml(order.customerName || "—"),
+    email: escapeHtml(order.contactEmail || "—"),
+    phone: escapeHtml(order.phone || "—"),
+  };
+  const sym = symbolFor(order.currency);
+  const fmt = (n: number) => `${sym}${n.toLocaleString("en-NG")}`;
+  const address = [
+    escapeHtml(order.addressLine1),
+    escapeHtml(order.addressLine2),
+    escapeHtml(order.city),
+    escapeHtml(order.state),
+    escapeHtml(order.country),
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const adminUrl = `${
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  }/admin/orders/${order.orderId}`;
+
+  const itemRows = order.items
+    .map(
+      (i) => `
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #eee;font-size:14px;color:#333">${escapeHtml(i.name)}${
+        i.size ? ` — ${escapeHtml(i.size)}` : ""
+      }</td>
+        <td style="padding:8px 0;border-bottom:1px solid #eee;font-size:14px;color:#333">× ${i.qty}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #eee;font-size:14px;color:#333;text-align:right">${fmt(
+          i.price * i.qty
+        )}</td>
+      </tr>`
+    )
+    .join("");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+  </head>
+  <body style="margin:0;padding:0;background:#f7f6f1;font-family:Arial,Helvetica,sans-serif">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f6f1;padding:24px">
+      <tr><td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #e5e2da;border-radius:4px">
+          <tr>
+            <td bgcolor="#000000" style="padding:32px 32px 16px;background:#000000 !important;background-color:#000000 !important;color:#ffffff !important">
+              <p style="margin:0;font-size:20px;font-weight:bold;letter-spacing:1px">NEW ORDER</p>
+              <p style="margin:6px 0 0;font-size:12px;letter-spacing:2px;color:#f4f3ed">CRITICS ARCHIVE</p>
+            </td>
+          </tr>
+          <tr><td style="padding:16px 32px">
+            <p style="margin:0;font-size:14px;color:#333">Order <strong>${safe.reference}</strong> just came in — <strong>${fmt(order.total)}</strong>.</p>
+            <p style="margin:6px 0 0;font-size:13px;color:#555">Customer: ${safe.customerName} · ${safe.email}${safe.phone !== "—" ? ` · ${safe.phone}` : ""}</p>
+          </td></tr>
+          <tr><td style="padding:8px 32px">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <th align="left" style="border-bottom:2px solid #0a0a09;padding:6px 0;font-size:12px;letter-spacing:1px;color:#0a0a09">Item</th>
+                <th align="left" style="border-bottom:2px solid #0a0a09;padding:6px 0;font-size:12px;letter-spacing:1px;color:#0a0a09">Qty</th>
+                <th align="right" style="border-bottom:2px solid #0a0a09;padding:6px 0;font-size:12px;letter-spacing:1px;color:#0a0a09">Total</th>
+              </tr>
+              ${itemRows}
+            </table>
+          </td></tr>
+          <tr><td style="padding:12px 32px">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="font-size:14px;color:#555;padding:2px 0">Subtotal</td><td align="right" style="font-size:14px;color:#333;padding:2px 0">${fmt(order.subtotal)}</td></tr>
+              <tr><td style="font-size:14px;color:#555;padding:2px 0">Delivery</td><td align="right" style="font-size:14px;color:#333;padding:2px 0">${fmt(order.shipping)}</td></tr>
+              <tr><td style="font-size:14px;color:#0a0a09;font-weight:bold;padding:6px 0;border-top:1px solid #eee">Total</td><td align="right" style="font-size:14px;color:#0a0a09;font-weight:bold;padding:6px 0;border-top:1px solid #eee">${fmt(order.total)}</td></tr>
+            </table>
+          </td></tr>
+          <tr><td style="padding:0 32px 16px">
+            <p style="margin:0;font-size:12px;letter-spacing:1px;color:#8a877e">SHIP TO</p>
+            <p style="margin:6px 0 0;font-size:14px;color:#333;line-height:1.6">${safe.customerName}<br />${address}</p>
+          </td></tr>
+          <tr><td style="padding:0 32px 32px">
+            <a href="${adminUrl}" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:10px 20px;font-size:13px;border-radius:4px">View order in admin</a>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+
+  try {
+    const { error } = await client.emails.send({
+      from: `Critics Archive <${fromEmail}>`,
+      to: notifyTo,
+      subject: `New order ${order.reference} — ${fmt(order.total)}`,
+      html,
+    });
+    return error?.message ?? null;
+  } catch (reason) {
+    return reason instanceof Error ? reason.message : "Unknown email send failure";
+  }
+}

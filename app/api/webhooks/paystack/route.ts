@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { fromPaystackMinorUnits, isValidPaystackSignature } from "@/lib/paystack";
-import { sendOrderConfirmationForReference } from "@/lib/order-confirmation";
+import { sendOrderNotificationsForReference } from "@/lib/order-confirmation";
 
 export const dynamic = "force-dynamic";
 
@@ -68,9 +68,9 @@ export async function POST(request: Request) {
       if (claimError) throw claimError;
       if (claimed === true) {
         try {
-          await sendOrderConfirmationForReference(payment.reference);
+          await sendOrderNotificationsForReference(payment.reference);
         } catch (emailError: unknown) {
-          console.error("Confirmation email: unexpected failure", emailError instanceof Error ? emailError.message : "Unknown error");
+          console.error("Order emails: unexpected failure", emailError instanceof Error ? emailError.message : "Unknown error");
         }
       }
     }

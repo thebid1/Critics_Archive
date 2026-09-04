@@ -117,6 +117,7 @@ export type OrdersRow = {
   payment_provider: string;
   paid_at: string | null;
   confirmation_email_sent_at: string | null;
+  owner_notified_at: string | null;
   tracking_number: string;
   shipped_email_sent_at: string | null;
   created_at: string;
@@ -147,6 +148,7 @@ export type OrdersInsert = {
   payment_provider?: string;
   paid_at?: string | null;
   confirmation_email_sent_at?: string | null;
+  owner_notified_at?: string | null;
   tracking_number?: string;
   shipped_email_sent_at?: string | null;
   created_at?: string;

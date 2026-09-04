@@ -73,6 +73,7 @@ create table orders (
   payment_provider text not null default 'paystack',
   paid_at          timestamptz,
   confirmation_email_sent_at timestamptz,
+  owner_notified_at timestamptz,
   created_at       timestamptz not null default now(),
   updated_at       timestamptz not null default now()
 );
