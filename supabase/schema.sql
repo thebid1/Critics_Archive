@@ -5,6 +5,8 @@
 create extension if not exists pgcrypto;
 
 drop table if exists admin_actions;
+drop table if exists paystack_events;
+drop table if exists newsletter_subscribers;
 drop table if exists order_items;
 drop table if exists orders;
 drop table if exists product_variants;
@@ -695,3 +697,48 @@ $$ language sql security definer set search_path = public;
 
 revoke execute on function admin_orders_status_counts() from public, anon, authenticated;
 grant execute on function admin_orders_status_counts() to service_role;
+
+-- ---------------------------------------------------------------------------
+-- Stage 8 — Security hardening: webhook replay protection + newsletter capture.
+-- ---------------------------------------------------------------------------
+
+-- One row per Paystack transaction reference we have already processed. Paystack
+-- retries webhook deliveries, so the webhook CLAIMS its reference here before
+-- doing any work: a duplicate delivery (same reference) is acknowledged without
+-- re-running fulfillment or the confirmation email (closes the confirmation
+-- email race documented in security.md).
+create table paystack_events (
+  reference    text primary key,
+  event        text not null,
+  processed_at timestamptz not null default now()
+);
+
+alter table paystack_events enable row level security;
+
+-- Newsletter subscribers (Stage 8 wiring — validation + rate limiting on the
+-- capture route). Server-only writes via the service role key.
+create table newsletter_subscribers (
+  id         uuid primary key default gen_random_uuid(),
+  email      text not null unique,
+  created_at timestamptz not null default now()
+);
+
+alter table newsletter_subscribers enable row level security;
+
+-- Atomically claim a webhook event. Returns true if this call inserted a new row
+-- (we own the event and should process it), false if the reference was already
+-- seen (duplicate delivery — skip).
+create or replace function claim_paystack_event(
+  p_reference text,
+  p_event text
+) returns boolean as $$
+begin
+  insert into paystack_events (reference, event)
+  values (p_reference, p_event)
+  on conflict (reference) do nothing;
+  return found;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+revoke execute on function claim_paystack_event(text, text) from public, anon, authenticated;
+grant execute on function claim_paystack_event(text, text) to service_role;

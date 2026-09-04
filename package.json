@@ -9,7 +9,8 @@
     "lint": "next lint",
     "db:reset": "node scripts/db-reset.mjs",
     "db:verify": "node scripts/verify-stage2.mjs",
-    "db:verify:stage7": "node scripts/verify-stage7.mjs"
+    "db:verify:stage7": "node scripts/verify-stage7.mjs",
+    "db:migrate:stage8": "node scripts/migrate-stage8.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",
@@ -17,7 +18,8 @@
     "next": "14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "resend": "^6.25.0"
+    "resend": "^6.25.0",
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^20.14.15",

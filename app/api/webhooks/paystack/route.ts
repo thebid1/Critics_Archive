@@ -57,12 +57,21 @@ export async function POST(request: Request) {
       // to the customer; support can reconcile via the order reference.
       console.error("Paystack webhook: fulfillment skipped", { reference: payment.reference, error: error.message });
     } else {
-      // Payment confirmed and order marked paid -> send the confirmation email.
-      // Best-effort; failures never change the successful payment response.
-      try {
-        await sendOrderConfirmationForReference(payment.reference);
-      } catch (emailError: unknown) {
-        console.error("Confirmation email: unexpected failure", emailError instanceof Error ? emailError.message : "Unknown error");
+      // Send the confirmation email EXACTLY ONCE. Fulfillment is idempotent, so a
+      // duplicate delivery re-runs it harmlessly; the claim gates only the email.
+      // A duplicate webhook (or a racing verify call) sees claimed=false and skips
+      // the send — closing the confirmation-email race in security.md.
+      const { data: claimed, error: claimError } = await createAdminSupabase().rpc(
+        "claim_paystack_event",
+        { p_reference: payment.reference, p_event: "charge.success" }
+      );
+      if (claimError) throw claimError;
+      if (claimed === true) {
+        try {
+          await sendOrderConfirmationForReference(payment.reference);
+        } catch (emailError: unknown) {
+          console.error("Confirmation email: unexpected failure", emailError instanceof Error ? emailError.message : "Unknown error");
+        }
       }
     }
     return NextResponse.json({ received: true });

@@ -2,47 +2,11 @@ import { NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { initializePaystackTransaction, toPaystackMinorUnits } from "@/lib/paystack";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
+import { checkoutSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-type CheckoutItem = { slug: string; size: string; qty: number };
-type CheckoutBody = {
-  email: string;
-  phone: string;
-  customerName: string;
-  addressLine1: string;
-  addressLine2?: string;
-  city: string;
-  deliverySelected: boolean;
-  items: CheckoutItem[];
-};
-
 const DELIVERY_FEE = 7000;
-
-function isNonEmpty(value: unknown, max = 200): value is string {
-  return typeof value === "string" && value.trim().length > 0 && value.length <= max;
-}
-
-function isValidBody(value: unknown): value is CheckoutBody {
-  if (typeof value !== "object" || value === null) return false;
-  const body = value as Record<string, unknown>;
-  const items = body.items;
-  return (
-    typeof body.email === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email) &&
-    typeof body.phone === "string" && /^\+?[0-9 ()-]{7,20}$/.test(body.phone) &&
-    isNonEmpty(body.customerName) && isNonEmpty(body.addressLine1) &&
-    (body.addressLine2 === undefined || typeof body.addressLine2 === "string") &&
-    isNonEmpty(body.city) &&
-    body.deliverySelected === true &&
-    Array.isArray(items) && items.length > 0 && items.length <= 50 &&
-    items.every((item) => {
-      if (typeof item !== "object" || item === null) return false;
-      const line = item as Record<string, unknown>;
-      return isNonEmpty(line.slug, 120) && typeof line.size === "string" &&
-        Number.isInteger(line.qty) && (line.qty as number) >= 1 && (line.qty as number) <= 99;
-    })
-  );
-}
 
 /** Read + JSON-parse the body, enforcing a hard size cap even without Content-Length. */
 async function readJsonBody(request: Request): Promise<
@@ -81,25 +45,27 @@ export async function POST(request: Request) {
   const { body, error, status } = await readJsonBody(request);
   if (error) return NextResponse.json({ error }, { status: status ?? 400 });
 
-  if (!isValidBody(body)) {
+  const parsed = checkoutSchema.safeParse(body);
+  if (!parsed.success) {
     return NextResponse.json({ error: "Invalid checkout details." }, { status: 400 });
   }
+  const input = parsed.data;
 
   try {
     const supabase = createAdminSupabase();
     // Release abandoned reservations before checking out new customers.
     await supabase.rpc("expire_pending_orders", { p_max_age_hours: 24 });
     const { data, error: rpcError } = await supabase.rpc("create_order", {
-      p_email: body.email.trim(),
-      p_phone: body.phone.trim(),
-      p_customer_name: body.customerName.trim(),
-      p_address_line1: body.addressLine1.trim(),
-      p_address_line2: body.addressLine2?.trim() ?? "",
-      p_city: body.city.trim(),
+      p_email: input.email,
+      p_phone: input.phone,
+      p_customer_name: input.customerName,
+      p_address_line1: input.addressLine1,
+      p_address_line2: input.addressLine2 ?? "",
+      p_city: input.city,
       p_country: "NG",
       p_delivery_fee: DELIVERY_FEE,
       p_currency: "NGN",
-      p_items: body.items.map((item) => ({ slug: item.slug.trim(), size: item.size, qty: item.qty })),
+      p_items: input.items.map((item) => ({ slug: item.slug, size: item.size, qty: item.qty })),
     });
     if (rpcError) {
       // Map the RPC's intentional stock failures to clean status codes.
@@ -130,7 +96,7 @@ export async function POST(request: Request) {
 
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
     const payment = await initializePaystackTransaction({
-      email: body.email.trim(),
+      email: input.email,
       amount: toPaystackMinorUnits(total, currency),
       currency,
       reference,

@@ -221,6 +221,34 @@ export type DropsInsert = {
 
 export type DropsUpdate = Partial<DropsInsert>;
 
+export type PaystackEventsRow = {
+  reference: string;
+  event: string;
+  processed_at: string;
+};
+
+export type PaystackEventsInsert = {
+  reference: string;
+  event: string;
+  processed_at?: string;
+};
+
+export type PaystackEventsUpdate = Partial<PaystackEventsInsert>;
+
+export type NewsletterSubscribersRow = {
+  id: string;
+  email: string;
+  created_at: string;
+};
+
+export type NewsletterSubscribersInsert = {
+  id?: string;
+  email: string;
+  created_at?: string;
+};
+
+export type NewsletterSubscribersUpdate = Partial<NewsletterSubscribersInsert>;
+
 export type Database = {
   public: {
     Tables: {
@@ -310,6 +338,18 @@ export type Database = {
         Row: AdminActionsRow;
         Insert: AdminActionsInsert;
         Update: AdminActionsUpdate;
+        Relationships: [];
+      };
+      paystack_events: {
+        Row: PaystackEventsRow;
+        Insert: PaystackEventsInsert;
+        Update: PaystackEventsUpdate;
+        Relationships: [];
+      };
+      newsletter_subscribers: {
+        Row: NewsletterSubscribersRow;
+        Insert: NewsletterSubscribersInsert;
+        Update: NewsletterSubscribersUpdate;
         Relationships: [];
       };
     };
@@ -408,6 +448,13 @@ export type Database = {
       admin_orders_status_counts: {
         Args: Record<string, never>;
         Returns: Json;
+      };
+      claim_paystack_event: {
+        Args: {
+          p_reference: string;
+          p_event: string;
+        };
+        Returns: boolean;
       };
     };
     Enums: Record<string, never>;
