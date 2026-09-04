@@ -4,7 +4,7 @@ import type {
   ProductVariantsRow,
   ProductsRow,
 } from "@/lib/supabase/database.types";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase, createServerSupabase } from "@/lib/supabase/server";
 
 /**
  * The display shape used by ProductCard / CurrentDrop (kept stable since
@@ -35,6 +35,55 @@ export type ProductDetail = Product & {
   images: string[]; // ordered by `position` ascending
   sizes: ProductVariant[]; // all variant rows, caller decides availability
 };
+
+/** Live homepage view: the currently active drop + only its products. */
+export type ActiveDrop = {
+  drop: { id: string; name: string } | null;
+  products: Product[];
+  season: string | null; // taken from the drop products (editorial label)
+};
+
+/**
+ * Stage 7: the homepage renders the ACTIVE drop only ("Current Drop"). /shop
+ * keeps showing every published product regardless of drop.
+ *
+ * drops has zero public RLS policies, so the active-drop lookup goes through the
+ * server-only client (RPC); the product rows themselves still use the
+ * RLS-bound publishable key like every other catalogue read. Never rendered on
+ * the client — this only runs in server components.
+ */
+export async function getActiveDrop(): Promise<ActiveDrop> {
+  const admin = createAdminSupabase();
+  const { data: dropData, error: dropError } = await admin.rpc("get_active_drop");
+  if (dropError || !dropData) {
+    throw new Error(`Supabase active-drop query failed: ${dropError?.message ?? "no active drop"}`);
+  }
+
+  const drop = dropData as unknown as { id: string; name: string } | null;
+  if (!drop) return { drop: null, products: [], season: null };
+
+  const supabase = createServerSupabase();
+  const { data, error } = await supabase
+    .from("products")
+    .select(LISTING_SELECT)
+    .eq("is_published", true)
+    .is("archived_at", null)
+    .eq("drop_id", drop.id)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error(`Supabase drop products query failed: ${error.message}`);
+  }
+
+  const products = (data ?? []).map((row) =>
+    mapProductRow(row as unknown as ProductRowWithRelations)
+  );
+  const season =
+    (data?.[0] as unknown as { season?: string | null } | undefined)?.season ??
+    null;
+
+  return { drop, products, season };
+}
 
 type ProductRowWithRelations = ProductsRow & {
   product_images?: Pick<ProductImagesRow, "url" | "position">[];

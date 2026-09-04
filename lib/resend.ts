@@ -179,3 +179,100 @@ export async function sendOrderConfirmationEmail(
     return reason instanceof Error ? reason.message : "Unknown email send failure";
   }
 }
+/**
+ * Shipped-notification email (Stage 7). Same Resend client + escaping helpers
+ * as the Stage 6 confirmation template. Triggered server-side only, after the
+ * order flips to `fulfilled` with an optional tracking number.
+ */
+export async function sendOrderShippedEmail(
+  order: OrderConfirmation,
+  trackingNumber: string
+): Promise<string | null> {
+  const client = getResend();
+  if (!client || !fromEmail) {
+    return "Resend is not configured (RESEND_API_KEY / RESEND_FROM_EMAIL)";
+  }
+
+  const safe = {
+    reference: escapeHtml(order.reference),
+    customerName: escapeHtml(order.customerName || "there"),
+    trackingNumber: escapeHtml(trackingNumber || ""),
+  };
+  const sym = symbolFor(order.currency);
+  const fmt = (n: number) => `${sym}${n.toLocaleString("en-NG")}`;
+  const wordmark = readFileSync(
+    path.join(process.cwd(), "public", "critics-archive-wordmark.png")
+  );
+
+  const itemSummary = order.items
+    .map(
+      (i) =>
+        `<li style="font-size:14px;color:#333;padding:4px 0">${escapeHtml(i.name)}${
+          i.size ? ` — ${escapeHtml(i.size)}` : ""
+        } × ${i.qty} · ${fmt(i.price * i.qty)}</li>`
+    )
+    .join("");
+
+  const html = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+  </head>
+  <body style="margin:0;padding:0;background:#f7f6f1;font-family:Arial,Helvetica,sans-serif">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f6f1;padding:24px">
+      <tr><td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #e5e2da;border-radius:4px">
+          <tr>
+            <td bgcolor="#000000" style="padding:32px 32px 16px;background:#000000 !important;background-color:#000000 !important;color:#ffffff !important">
+              <img src="cid:critics-archive-wordmark" alt="Critics Archive" width="220" height="33" style="display:block;width:220px;height:33px;object-fit:contain;object-position:left" />
+              <p style="margin:10px 0 0;font-size:12px;letter-spacing:2px;color:#f4f3ed">SWAG IS ART</p>
+            </td>
+          </tr>
+          <tr><td style="padding:8px 32px">
+            <h2 style="margin:16px 0 4px;font-size:16px;color:#0a0a09">Your order is on the way, ${safe.customerName}.</h2>
+            <p style="margin:0;font-size:14px;color:#333;line-height:1.5">Order <strong>${safe.reference}</strong> has been shipped${
+              safe.trackingNumber ? ` with tracking <strong>${safe.trackingNumber}</strong>` : ""
+            }.</p>
+          </td></tr>
+          <tr><td style="padding:8px 32px 0">
+            <p style="margin:0;font-size:12px;letter-spacing:1px;color:#8a877e">IN THIS ORDER</p>
+            <ul style="margin:8px 0 0;padding-left:18px">${itemSummary}</ul>
+          </td></tr>
+          <tr><td style="padding:8px 32px 0">
+            <p style="margin:0;font-size:13px;color:#555">Total paid: <strong>${fmt(order.total)}</strong></p>
+          </td></tr>
+          <tr>
+            <td bgcolor="#000000" style="padding:16px 32px 32px;background:#000000 !important;background-color:#000000 !important;color:#ffffff !important">
+              <img src="${FOOTER_LOGO_IMAGE}" alt="Critics Archive logo" width="40" height="40" style="display:block;width:40px;height:40px;object-fit:contain" />
+              <p style="margin:10px 0 0;font-size:11px;color:#f4f3ed;letter-spacing:1px">CRITICS ARCHIVE — SWAG IS ART.</p>
+              <p style="margin:8px 0 0;font-size:12px;color:#f4f3ed">Questions? Contact <a href="mailto:support@criticsarchive.com" style="color:#ffffff">support@criticsarchive.com</a></p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+
+  try {
+    const { error } = await client.emails.send({
+      from: `Critics Archive <${fromEmail}>`,
+      to: order.contactEmail,
+      subject: `${safe.trackingNumber ? "Shipped" : "On the way"} — CRITICS ARCHIVE order ${order.reference}`,
+      html,
+      attachments: [
+        {
+          filename: "critics-archive-wordmark.png",
+          content: wordmark,
+          contentType: "image/png",
+          contentId: "critics-archive-wordmark",
+        },
+      ],
+    });
+    return error?.message ?? null;
+  } catch (reason) {
+    return reason instanceof Error ? reason.message : "Unknown email send failure";
+  }
+}

@@ -83,3 +83,15 @@ where slug = 'sia-sweatpants';
 insert into product_variants (product_id, size)
 select id, 'OS'
 from products where slug = 'swag-is-art-hoodie-scarf';
+-- Stage 7: drops. Drop 001 is the live homepage drop; products are linked by
+-- drop_id (the homepage shows ONLY the active drop's products, /shop shows all).
+insert into drops (name, is_active) values ('Drop 001', true);
+
+update products set drop_id = (select id from drops where name = 'Drop 001');
+
+-- Fixed size charts per product type (client: "charts never change").
+update products set size_chart = 'tee'        where slug in ('black-runway-url-tee', 'white-runway-url-tee', 'crt-domain-expansion-white-tee', 'crt-domain-expansion-black-tee');
+update products set size_chart = 'short'     where slug = 'black-swag-is-art-shorts';
+update products set size_chart = 'scarf'      where slug = 'swag-is-art-hoodie-scarf';
+update products set size_chart = 'hoodie'     where slug = 'sia-hoodie';
+update products set size_chart = 'sweatpants' where slug = 'sia-sweatpants';

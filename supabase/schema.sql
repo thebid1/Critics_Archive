@@ -4,11 +4,13 @@
 
 create extension if not exists pgcrypto;
 
+drop table if exists admin_actions;
 drop table if exists order_items;
 drop table if exists orders;
 drop table if exists product_variants;
 drop table if exists product_images;
 drop table if exists products;
+drop table if exists drops;
 
 create table products (
   id           uuid primary key default gen_random_uuid(),
@@ -307,4 +309,389 @@ create policy "product_variants_public_select" on product_variants
 --  * Catalogue writes happen only with the service/secret key (RLS-bypassing) or
 --    by the table owner (admin) — verified in scripts/verify-stage2.mjs.
 --  * orders/order_items have no public policies at all; rows are created by the
+-- ---------------------------------------------------------------------------
+-- Stage 7 — Admin (minimal). drops / admin_actions / audited write RPCs.
+-- ---------------------------------------------------------------------------
+
+-- A drop = one homepage collection ("Drop 001", "Drop 002"...). At most one row
+-- has is_active = true; the transition is an atomic RPC (publish_drop), not a
+-- DB constraint, so the app layer owns the swap.
+create table drops (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  is_active  boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+-- Audit trail: every admin write (stock change, order status change, product
+-- create/update, drop create/publish, email resend) inserts one row HERE in
+-- the SAME transaction as the change itself -- treated as required, not optional.
+create table admin_actions (
+  id           uuid primary key default gen_random_uuid(),
+  admin_email  text not null,
+  action       text not null,   -- e.g. 'stock_updated', 'order_status_updated', 'drop_published'
+  target_table text not null,
+  target_id    uuid not null,
+  before       jsonb,
+  after        jsonb,
+  created_at   timestamptz not null default now()
+);
+
+create index admin_actions_target_idx on admin_actions (target_table, target_id);
+create index admin_actions_created_idx on admin_actions (created_at desc);
 --    server-side secret client during checkout (Stage 5).
+-- Products now belong to an optional drop (homepage = active drop; /shop = all).
+alter table products add column drop_id uuid references drops (id);
+-- Fixed per product type ("size charts never change") -- which chart applies.
+-- Stock remains ONE product-level pool (client clarification, Stage 7).
+alter table products add column size_chart text not null default '';
+
+alter table orders add column tracking_number text not null default '';
+alter table orders add column shipped_email_sent_at timestamptz;
+
+create index drops_active_idx on drops (is_active) where is_active;
+create index products_drop_idx on products (drop_id);
+
+-- Same RLS treatment as orders from Stage 2: RLS enabled, ZERO public policies.
+-- drops/admin_actions are only reachable through server-side code with the
+-- service role key (the admin data layer / RPCs).
+alter table drops         enable row level security;
+alter table admin_actions enable row level security;
+-- All audit-inserting write paths below are SECURITY DEFINER and EXECUTE is
+-- granted ONLY to service_role. This keeps each admin write + its admin_actions
+-- row in one transaction (never an afterthought).
+
+-- Record an audit row as a standalone unit (email resends, etc.).
+create or replace function record_admin_action(
+  p_admin_email text,
+  p_action text,
+  p_target_table text,
+  p_target_id uuid,
+  p_before jsonb default null,
+  p_after jsonb default null
+) returns void as $$
+begin
+  insert into admin_actions (admin_email, action, target_table, target_id, before, after)
+  values (p_admin_email, p_action, p_target_table, p_target_id, p_before, p_after);
+end;
+$$ language plpgsql security definer set search_path = public;
+
+revoke execute on function record_admin_action(text, text, text, uuid, jsonb, jsonb)
+  from public, anon, authenticated;
+grant execute on function record_admin_action(text, text, text, uuid, jsonb, jsonb)
+  to service_role;
+
+-- Server-only util: list one active drop row (used by the homepage).
+create or replace function get_active_drop()
+returns jsonb as $$
+declare
+  v_drop drops%rowtype;
+begin
+  select * into v_drop from drops where is_active order by created_at desc limit 1;
+  if not found then return null; end if;
+  return jsonb_build_object('id', v_drop.id, 'name', v_drop.name, 'is_active', v_drop.is_active);
+end;
+$$ language plpgsql security definer set search_path = public;
+
+revoke execute on function get_active_drop() from public, anon, authenticated;
+grant execute on function get_active_drop() to service_role;
+
+-- Create a drop (not active yet).
+create or replace function create_drop(
+  p_name text,
+  p_admin_email text
+) returns jsonb as $$
+declare
+  v_drop drops%rowtype;
+begin
+  if p_name is null or trim(p_name) = '' or length(p_name) > 120 then
+    raise exception 'BAD_NAME';
+  end if;
+  insert into drops (name) values (trim(p_name))
+  returning * into v_drop;
+
+  perform record_admin_action(p_admin_email, 'drop_created', 'drops', v_drop.id, null,
+    to_jsonb(v_drop));
+
+  return to_jsonb(v_drop);
+end;
+$$ language plpgsql security definer set search_path = public;
+
+revoke execute on function create_drop(text, text) from public, anon, authenticated;
+grant execute on function create_drop(text, text) to service_role;
+
+-- Publish a drop = single atomic swap: unset the currently active row, set the
+-- new one. Products already published stay published (they only leave the
+-- homepage spot, never /shop).
+-- Set the single product-level stock pool for a product. The storefront derives
+-- "sold out" purely from stock = 0 -- no separate boolean anywhere.
+create or replace function set_product_stock(
+  p_product_id uuid,
+  p_stock integer,
+  p_admin_email text
+) returns integer as $$
+declare
+  v_before integer;
+  v_after integer;
+begin
+  if p_stock < 0 then raise exception 'INVALID_STOCK'; end if;
+
+  select stock into v_before from products where id = p_product_id for update;
+  if not found then raise exception 'PRODUCT_NOT_FOUND'; end if;
+
+  update products set stock = p_stock where id = p_product_id;
+  v_after := p_stock;
+
+  perform record_admin_action(p_admin_email, 'stock_updated', 'products', p_product_id,
+    jsonb_build_object('stock', v_before),
+    jsonb_build_object('stock', v_after));
+
+  return v_after;
+end;
+$$ language plpgsql security definer set search_path = public;
+
+revoke execute on function set_product_stock(uuid, integer, text)
+  from public, anon, authenticated;
+grant execute on function set_product_stock(uuid, integer, text) to service_role;
+create or replace function publish_drop(
+  p_drop_id uuid,
+  p_admin_email text
+) returns jsonb as $$
+declare
+  v_old_id uuid;
+  v_drop drops%rowtype;
+begin
+  select id into v_old_id from drops where is_active order by created_at desc limit 1;
+
+  update drops set is_active = false where is_active;
+  update drops set is_active = true where id = p_drop_id
+  returning * into v_drop;
+
+  if not found then
+    raise exception 'DROP_NOT_FOUND';
+  end if;
+
+  perform record_admin_action(p_admin_email, 'drop_published', 'drops', v_drop.id,
+    jsonb_build_object('previous_active_drop_id', v_old_id),
+    jsonb_build_object('active_drop_id', v_drop.id, 'name', v_drop.name));
+
+  return jsonb_build_object('id', v_drop.id, 'name', v_drop.name, 'is_active', true,
+    'previous_active_drop_id', v_old_id);
+end;
+$$ language plpgsql security definer set search_path = public;
+
+revoke execute on function publish_drop(uuid, text) from public, anon, authenticated;
+-- Product create (admin): inserts the product row, its size-chart variants, and
+-- its images atomically, with one audit row. p_data shape:
+-- { name, slug, price, currency, description, stock, drop_id?, is_new, is_published,
+--   season?, size_chart ('tee'|'shorts'|'hoodie'|'sweatpants'|'scarf'), images: [{url, alt}] }
+create or replace function create_product(
+  p_admin_email text,
+  p_data jsonb
+) returns jsonb as $$
+declare
+  v_product products%rowtype;
+  v_size_chart text;
+  v_image jsonb;
+  v_pos integer := 0;
+begin
+  if jsonb_typeof(p_data) <> 'object' then raise exception 'BAD_PAYLOAD'; end if;
+
+  v_size_chart := coalesce(p_data->>'size_chart', '');
+  if v_size_chart not in ('tee', 'short', 'hoodie', 'sweatpants', 'scarf') then
+    raise exception 'BAD_SIZE_CHART';
+  end if;
+
+  insert into products (
+    slug, name, price, currency, description, stock, drop_id, is_new, is_published,
+    season, size_chart
+  ) values (
+    trim(coalesce(p_data->>'slug', '')),
+    trim(coalesce(p_data->>'name', '')),
+    coalesce((p_data->>'price')::int, 0),
+    coalesce(p_data->>'currency', 'NGN'),
+    coalesce(p_data->>'description', ''),
+    coalesce((p_data->>'stock')::int, 0),
+    (p_data->>'drop_id')::uuid,
+    coalesce((p_data->>'is_new')::boolean, false),
+    coalesce((p_data->>'is_published')::boolean, false),
+    coalesce(p_data->>'season', ''),
+    v_size_chart
+  ) returning * into v_product;
+
+  -- Fixed size charts per product type (client: "charts never change").
+  insert into product_variants (product_id, size)
+  select v_product.id, s.size
+  from (select unnest(
+    case v_size_chart
+      when 'tee'        then array['S','M','L','XL','XXL']
+      when 'short'      then array['L','XL','XXL']
+      when 'hoodie'     then array['S','M','L','XL','XX']
+      when 'sweatpants' then array['S','M','L','XL','XXL']
+      when 'scarf'      then array['OS']
+    end
+  ) as size) s;
+
+  if jsonb_typeof(p_data->'images') = 'array' then
+    for v_image in select * from jsonb_array_elements(p_data->'images') loop
+      if coalesce(v_image->>'url', '') <> '' then
+        insert into product_images (product_id, url, alt, position)
+        values (v_product.id, v_image->>'url', coalesce(v_image->>'alt', ''), v_pos);
+        v_pos := v_pos + 1;
+      end if;
+    end loop;
+  end if;
+
+  perform record_admin_action(p_admin_email, 'product_created', 'products', v_product.id,
+    null, to_jsonb(v_product));
+
+  return jsonb_build_object('id', v_product.id, 'slug', v_product.slug);
+end;
+$$ language plpgsql security definer set search_path = public;
+
+revoke execute on function create_product(text, jsonb) from public, anon, authenticated;
+grant execute on function create_product(text, jsonb) to service_role;
+grant execute on function publish_drop(uuid, text) to service_role;
+-- Product update (admin): allowed keys are name, slug, price, currency,
+-- description, stock, drop_id, is_new, is_published, season, archived_at, and
+-- 'images' (REPLACES the whole product_images set in order). Variants are never
+-- touched -- size charts are fixed. Old + new rows are both audited.
+create or replace function update_product(
+  p_product_id uuid,
+  p_admin_email text,
+  p_patch jsonb
+) returns jsonb as $$
+declare
+  v_old products%rowtype;
+  v_new products%rowtype;
+  v_image jsonb;
+  v_pos integer := 0;
+begin
+  if jsonb_typeof(p_patch) <> 'object' then raise exception 'BAD_PAYLOAD'; end if;
+
+  select * into v_old from products where id = p_product_id for update;
+  if not found then raise exception 'PRODUCT_NOT_FOUND'; end if;
+
+  v_new := v_old;
+
+  -- Text/numeric scalars.
+  if p_patch ? 'name' then v_new.name := trim(coalesce(p_patch->>'name', v_new.name)); end if;
+  if p_patch ? 'slug' then v_new.slug := trim(coalesce(p_patch->>'slug', v_new.slug)); end if;
+  if p_patch ? 'price' then v_new.price := coalesce((p_patch->>'price')::int, v_new.price); end if;
+  if p_patch ? 'currency' then v_new.currency := coalesce(p_patch->>'currency', v_new.currency); end if;
+  if p_patch ? 'description' then v_new.description := coalesce(p_patch->>'description', v_new.description); end if;
+  if p_patch ? 'stock' then v_new.stock := coalesce((p_patch->>'stock')::int, v_new.stock); end if;
+  if p_patch ? 'drop_id' then v_new.drop_id := (p_patch->>'drop_id')::uuid; end if;
+  if p_patch ? 'season' then v_new.season := coalesce(p_patch->>'season', v_new.season); end if;
+
+  if p_patch ? 'is_new' then v_new.is_new := coalesce((p_patch->>'is_new')::boolean, v_new.is_new); end if;
+  if p_patch ? 'is_published' then v_new.is_published := coalesce((p_patch->>'is_published')::boolean, v_new.is_published); end if;
+
+  -- archived_at: explicit boolean toggle maps to a timestamp.
+  if p_patch ? 'archived' then
+    if (p_patch->>'archived')::boolean then
+      if v_new.archived_at is null then v_new.archived_at := now(); end if;
+    else
+      v_new.archived_at := null;
+    end if;
+  end if;
+
+  if v_new.stock < 0 or v_new.price < 0 then raise exception 'INVALID_VALUE'; end if;
+  if v_new.slug = '' or v_new.name = '' then raise exception 'BAD_VALUE'; end if;
+
+  update products set
+    slug = v_new.slug, name = v_new.name, price = v_new.price, currency = v_new.currency,
+    description = v_new.description, stock = v_new.stock, drop_id = v_new.drop_id,
+    is_new = v_new.is_new, is_published = v_new.is_published, season = v_new.season,
+    archived_at = v_new.archived_at
+  where id = p_product_id
+  returning * into v_new;
+
+  -- Images: accepted as a full replacement list {url, alt}[] in display order.
+  if jsonb_typeof(p_patch->'images') = 'array' then
+    delete from product_images where product_id = p_product_id;
+    for v_image in select * from jsonb_array_elements(p_patch->'images') loop
+      if coalesce(v_image->>'url', '') <> '' then
+        insert into product_images (product_id, url, alt, position)
+        values (p_product_id, v_image->>'url', coalesce(v_image->>'alt', ''), v_pos);
+        v_pos := v_pos + 1;
+      end if;
+    end loop;
+  end if;
+
+  perform record_admin_action(p_admin_email, 'product_updated', 'products', p_product_id,
+    to_jsonb(v_old), to_jsonb(v_new));
+
+  return to_jsonb(v_new);
+end;
+$$ language plpgsql security definer set search_path = public;
+
+revoke execute on function update_product(uuid, text, jsonb)
+  from public, anon, authenticated;
+-- Order status change (admin). The rule from Stage 5/agents.md stays: ONLY the
+-- signed Paystack webhook / server-side verify may set 'paid'. The admin may
+-- mark a paid order fulfilled (captures an optional tracking number) or cancel a
+-- still-pending order (which re-credits the reserved stock).
+create or replace function update_order_status(
+  p_order_id uuid,
+  p_admin_email text,
+  p_status text,
+  p_tracking text default ''
+) returns jsonb as $$
+declare
+  v_old orders%rowtype;
+  v_new orders%rowtype;
+begin
+  select * into v_old from orders where id = p_order_id for update;
+  if not found then raise exception 'ORDER_NOT_FOUND'; end if;
+
+  if p_status = 'paid' then raise exception 'ADMIN_CANNOT_SET_PAID'; end if;
+  if p_status not in ('fulfilled', 'cancelled') then raise exception 'BAD_STATUS'; end if;
+
+  if p_status = 'fulfilled' and v_old.status not in ('paid', 'fulfilled') then
+    raise exception 'ONLY_PAID_CAN_FULFILL';
+  end if;
+  if p_status = 'cancelled' and v_old.status <> 'pending' then
+    raise exception 'ONLY_PENDING_CAN_CANCEL';
+  end if;
+
+  v_new := v_old;
+  v_new.status := p_status;
+  v_new.tracking_number := coalesce(trim(p_tracking), '');
+
+  update orders set status = v_new.status, tracking_number = v_new.tracking_number
+  where id = p_order_id
+  returning * into v_new;
+
+  -- Re-credit reserved stock when a pending order is cancelled.
+  if v_old.status = 'pending' and v_new.status = 'cancelled' then
+    update products p
+      set stock = p.stock + oi.qty
+      from order_items oi
+      where oi.order_id = p_order_id and p.id = oi.product_id;
+  end if;
+
+  perform record_admin_action(p_admin_email, 'order_status_updated', 'orders', p_order_id,
+    jsonb_build_object('status', v_old.status, 'tracking_number', v_old.tracking_number),
+    jsonb_build_object('status', v_new.status, 'tracking_number', v_new.tracking_number));
+
+  return jsonb_build_object(
+    'order_id', v_new.id, 'status', v_new.status, 'tracking_number', v_new.tracking_number
+  );
+end;
+$$ language plpgsql security definer set search_path = public;
+
+revoke execute on function update_order_status(uuid, text, text, text)
+  from public, anon, authenticated;
+grant execute on function update_order_status(uuid, text, text, text) to service_role;
+grant execute on function update_product(uuid, text, jsonb) to service_role;
+-- Admin dashboard counts (service-role only).
+create or replace function admin_orders_status_counts()
+returns table(status text, count bigint) as $$
+  select orders.status, count(*)::bigint as count
+  from orders
+  group by orders.status;
+$$ language sql security definer set search_path = public;
+
+revoke execute on function admin_orders_status_counts() from public, anon, authenticated;
+grant execute on function admin_orders_status_counts() to service_role;
