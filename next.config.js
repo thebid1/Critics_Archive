@@ -11,7 +11,7 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https://res.cloudinary.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.paystack.co https://*.supabase.co https://api.cloudinary.com",
+  "connect-src 'self' https://api.paystack.co https://*.paystack.co https://*.supabase.co https://api.cloudinary.com",
   "frame-src https://checkout.paystack.com https://*.paystack.co",
   "object-src 'none'",
   "base-uri 'self'",
