@@ -27,14 +27,21 @@ const FADE_MS = 1200; // crossfade duration
 
 export default function Hero() {
   const [active, setActive] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
+    setReduceMotion(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }, []);
+
+  // Auto-advance only when the user hasn't requested reduced motion.
+  useEffect(() => {
+    if (reduceMotion) return;
     const id = setInterval(
       () => setActive((curr) => (curr + 1) % HERO_IMAGES.length),
       SLIDE_INTERVAL_MS
     );
     return () => clearInterval(id);
-  }, []);
+  }, [reduceMotion]);
 
   return (
     <section className="relative flex min-h-[88vh] items-end overflow-hidden border-b border-hairline">
@@ -78,6 +85,22 @@ export default function Hero() {
         >
           Shop the drop
         </Link>
+      </div>
+
+      {/* Manual slide dots — also the navigation for reduced-motion users. */}
+      <div className="absolute bottom-4 right-5 z-10 flex gap-2 sm:bottom-6">
+        {HERO_IMAGES.map((src, i) => (
+          <button
+            key={src}
+            type="button"
+            onClick={() => setActive(i)}
+            aria-label={`Slide ${i + 1} of ${HERO_IMAGES.length}`}
+            aria-current={i === active}
+            className={`h-2 w-2 rounded-full transition-colors ${
+              i === active ? "bg-bone" : "bg-bone/40 hover:bg-bone/70"
+            }`}
+          />
+        ))}
       </div>
     </section>
   );

@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       p_address_line1: input.addressLine1,
       p_address_line2: input.addressLine2 ?? "",
       p_city: input.city,
+      p_state: input.state,
       p_country: "NG",
       p_delivery_fee: DELIVERY_FEE,
       p_currency: "NGN",

@@ -108,6 +108,7 @@ export type OrdersRow = {
   address_line1: string;
   address_line2: string;
   city: string;
+  state: string;
   country: string;
   subtotal: number;
   shipping_total: number;
@@ -137,6 +138,7 @@ export type OrdersInsert = {
   address_line1?: string;
   address_line2?: string;
   city?: string;
+  state?: string;
   country?: string;
   subtotal?: number;
   shipping_total?: number;
@@ -371,6 +373,7 @@ export type Database = {
           p_address_line1: string;
           p_address_line2: string;
           p_city: string;
+          p_state: string;
           p_country: string;
           p_delivery_fee: number;
           p_currency: string;

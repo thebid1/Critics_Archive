@@ -23,7 +23,7 @@ export default async function AdminOrderDetailPage({
   const order = await getAdminOrder(params.id);
   if (!order) notFound();
 
-  const address = [order.address_line1, order.address_line2, order.city, order.country]
+  const address = [order.address_line1, order.address_line2, order.city, order.state, order.country]
     .map((part) => part.trim())
     .filter(Boolean)
     .join(", ");

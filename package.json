@@ -10,7 +10,8 @@
     "db:reset": "node scripts/db-reset.mjs",
     "db:verify": "node scripts/verify-stage2.mjs",
     "db:verify:stage7": "node scripts/verify-stage7.mjs",
-    "db:migrate:stage8": "node scripts/migrate-stage8.mjs"
+    "db:migrate:stage8": "node scripts/migrate-stage8.mjs",
+    "db:migrate:state": "node scripts/migrate-state.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.5",

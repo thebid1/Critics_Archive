@@ -10,6 +10,7 @@ import { formatPrice } from "@/lib/format";
 import { cloudinaryOptimized } from "@/lib/cloudinary";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import StateSelect from "@/components/StateSelect";
 
 const checkoutFields: Array<[keyof CheckoutForm, string, string]> = [
   ["email", "Email", "email"],
@@ -27,6 +28,7 @@ type CheckoutForm = {
   addressLine1: string;
   addressLine2: string;
   city: string;
+  state: string;
 };
 
 const DELIVERY_FEE = 7000;
@@ -49,7 +51,7 @@ declare global {
 function CheckoutPageContent() {
   const { items, count, total, clearCart, removeItem, setQty } = useCart();
   const searchParams = useSearchParams();
-  const [form, setForm] = useState<CheckoutForm>({ email: "", phone: "", customerName: "", addressLine1: "", addressLine2: "", city: "" });
+  const [form, setForm] = useState<CheckoutForm>({ email: "", phone: "", customerName: "", addressLine1: "", addressLine2: "", city: "", state: "" });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [paid, setPaid] = useState(false);
@@ -130,6 +132,7 @@ function CheckoutPageContent() {
     setBusy(true);
     try {
       if (!deliverySelected) throw new Error("Select delivery before continuing.");
+      if (!form.state) throw new Error("Select your state.");
       const response = await fetch("/api/orders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, deliverySelected, items: items.map(({ slug, size, qty }) => ({ slug, size, qty })) }) });
       const result = (await response.json()) as { accessCode?: string; reference?: string; error?: string };
       if (!response.ok || !result.accessCode || !result.reference) throw new Error(result.error ?? "We could not start payment.");
@@ -301,6 +304,15 @@ function CheckoutPageContent() {
                       <input type={type} value={form[key]} onChange={(event) => setForm((current) => ({ ...current, [key]: event.target.value }))} className="mt-2 block w-full border border-hairline bg-transparent px-3 py-3 font-body text-sm text-bone outline-none focus:border-accent" required={key !== "addressLine2"} />
                     </label>
                   ))}
+                  <div className="font-label text-[10px] uppercase tracking-wide text-bone-dim sm:col-span-2">
+                    <span>State</span>
+                    <div className="mt-2">
+                      <StateSelect
+                        value={form.state}
+                        onChange={(state) => setForm((current) => ({ ...current, state }))}
+                      />
+                    </div>
+                  </div>
                 </div>
                 {error && <p role="alert" className="mt-5 font-body text-sm text-red-300">{error}</p>}
                 <button type="submit" disabled={busy || !paystackReady || !deliverySelected} className="mt-6 w-full bg-bone px-6 py-3.5 font-label text-xs uppercase tracking-widest2 text-ink transition-colors hover:bg-accent disabled:cursor-wait disabled:opacity-60">

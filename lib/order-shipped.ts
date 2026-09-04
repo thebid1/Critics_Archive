@@ -64,6 +64,7 @@ export async function sendShippedForOrderId(
       addressLine1: "",
       addressLine2: "",
       city: "",
+      state: "",
       country: "",
     },
     trackingNumber

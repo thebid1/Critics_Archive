@@ -7,7 +7,7 @@ export async function sendOrderConfirmationForReference(reference: string): Prom
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "id, reference, email, phone, customer_name, address_line1, address_line2, city, country, " +
+      "id, reference, email, phone, customer_name, address_line1, address_line2, city, state, country, " +
         "subtotal, shipping_total, total, currency, confirmation_email_sent_at, " +
         "order_items(name, size, price, qty, image)"
     )
@@ -27,6 +27,7 @@ export async function sendOrderConfirmationForReference(reference: string): Prom
     address_line1: string;
     address_line2: string;
     city: string;
+    state: string;
     country: string;
     subtotal: number;
     shipping_total: number;
@@ -57,6 +58,7 @@ export async function sendOrderConfirmationForReference(reference: string): Prom
     addressLine1: order.address_line1,
     addressLine2: order.address_line2,
     city: order.city,
+    state: order.state,
     country: order.country,
   });
   if (sendError) {

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { NIGERIA_STATE_SET } from "@/lib/nigeria-states";
 
 /**
  * Shared Zod schemas for route-handler input (Stage 8). Every public-facing
@@ -22,6 +23,10 @@ export const checkoutSchema = z.object({
   addressLine1: z.string().trim().min(1).max(200),
   addressLine2: z.string().trim().max(200).optional(),
   city: z.string().trim().min(1).max(200),
+  state: z
+    .string()
+    .trim()
+    .refine((s) => NIGERIA_STATE_SET.has(s), { message: "Select a valid state." }),
   deliverySelected: z.literal(true),
   items: z
     .array(

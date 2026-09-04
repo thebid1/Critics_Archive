@@ -137,6 +137,7 @@ export type AdminOrder = {
   address_line1: string;
   address_line2: string;
   city: string;
+  state: string;
   country: string;
   subtotal: number;
   shipping_total: number;
@@ -161,6 +162,7 @@ type OrderRow = {
   address_line1: string;
   address_line2: string;
   city: string;
+  state: string;
   country: string;
   subtotal: number;
   shipping_total: number;
@@ -186,6 +188,7 @@ function mapOrderRow(row: OrderRow): AdminOrder {
     address_line1: row.address_line1,
     address_line2: row.address_line2,
     city: row.city,
+    state: row.state,
     country: row.country,
     subtotal: row.subtotal,
     shipping_total: row.shipping_total,
@@ -268,6 +271,7 @@ export async function listAdminOrders(options: {
         phone: "",
         address_line1: "",
         address_line2: "",
+        state: "",
         subtotal: 0,
         shipping_total: 0,
         tracking_number: "",
@@ -282,7 +286,7 @@ export async function getAdminOrder(id: string): Promise<AdminOrder | null> {
   const { data, error } = await supabase
     .from("orders")
     .select(
-      "id, reference, status, email, phone, customer_name, address_line1, address_line2, city, country, " +
+      "id, reference, status, email, phone, customer_name, address_line1, address_line2, city, state, country, " +
         "subtotal, shipping_total, total, currency, paid_at, confirmation_email_sent_at, tracking_number, shipped_email_sent_at, created_at, updated_at, " +
         "order_items(id, name, size, price, qty, image)"
     )

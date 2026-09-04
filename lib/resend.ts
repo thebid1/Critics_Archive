@@ -37,6 +37,7 @@ export type OrderConfirmation = {
   addressLine1: string;
   addressLine2: string;
   city: string;
+  state: string;
   country: string;
 };
 
@@ -77,11 +78,12 @@ export async function sendOrderConfirmationEmail(
     addressLine1: escapeHtml(order.addressLine1),
     addressLine2: escapeHtml(order.addressLine2),
     city: escapeHtml(order.city),
+    state: escapeHtml(order.state),
     country: escapeHtml(order.country),
   };
   const sym = symbolFor(order.currency);
   const fmt = (n: number) => `${sym}${n.toLocaleString("en-NG")}`;
-  const address = [safe.addressLine1, safe.addressLine2, safe.city, safe.country]
+  const address = [safe.addressLine1, safe.addressLine2, safe.city, safe.state, safe.country]
     .filter(Boolean)
     .join(", ");
   const wordmark = readFileSync(

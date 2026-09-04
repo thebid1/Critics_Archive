@@ -64,6 +64,7 @@ create table orders (
   address_line1    text not null default '',
   address_line2    text not null default '',
   city             text not null default '',
+  state            text not null default '',
   country          text not null default '',
   subtotal         integer not null default 0,
   shipping_total   integer not null default 0,
@@ -119,6 +120,7 @@ create or replace function create_order(
   p_address_line1 text,
   p_address_line2 text,
   p_city text,
+  p_state text,
   p_country text,
   p_delivery_fee integer,
   p_currency text,
@@ -194,10 +196,10 @@ begin
 
   v_total := v_subtotal + p_delivery_fee;
   insert into orders (
-    reference, email, phone, customer_name, address_line1, address_line2, city, country,
+    reference, email, phone, customer_name, address_line1, address_line2, city, state, country,
     subtotal, shipping_total, total, currency, status
   ) values (
-    v_ref, p_email, p_phone, p_customer_name, p_address_line1, p_address_line2, p_city, p_country,
+    v_ref, p_email, p_phone, p_customer_name, p_address_line1, p_address_line2, p_city, p_state, p_country,
     v_subtotal, p_delivery_fee, v_total, p_currency, 'pending'
   ) returning id into v_order_id;
 
@@ -215,9 +217,9 @@ begin
 end;
 $$ language plpgsql security definer set search_path = public;
 
-revoke execute on function create_order(text, text, text, text, text, text, text, integer, text, jsonb)
+revoke execute on function create_order(text, text, text, text, text, text, text, text, integer, text, jsonb)
   from public, anon, authenticated;
-grant execute on function create_order(text, text, text, text, text, text, text, integer, text, jsonb)
+grant execute on function create_order(text, text, text, text, text, text, text, text, integer, text, jsonb)
   to service_role;
 -- Atomically validate a successful Paystack payment and mark the order paid.
 -- Stock was already reserved at create_order, so nothing is decremented here.
