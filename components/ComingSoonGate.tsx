@@ -19,7 +19,12 @@ export default function ComingSoonGate() {
         body: JSON.stringify({ password }),
       });
       if (res.ok) {
-        window.location.reload();
+        // Navigate to the page they were originally headed to (or home). A full
+        // navigation re-runs middleware, which now sees the valid cookie and
+        // lets them in — reloading /coming-soon would just show the form again.
+        const next = new URLSearchParams(window.location.search).get("next");
+        const target = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+        window.location.assign(target);
       } else {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         setError(data.error ?? "Wrong password.");

@@ -58,7 +58,12 @@ export async function proxy(request: NextRequest) {
     if (enabled && hash) {
       const cookie = request.cookies.get(SITE_UNLOCK_COOKIE)?.value ?? "";
       if (!(await isValidUnlock(cookie, hash))) {
-        return NextResponse.redirect(new URL("/coming-soon", request.url));
+        // Remember where the visitor was headed so the gate form can return them
+        // there after a successful unlock.
+        const target = pathname + request.nextUrl.search;
+        const gate = new URL("/coming-soon", request.url);
+        gate.searchParams.set("next", target);
+        return NextResponse.redirect(gate);
       }
     }
   }
