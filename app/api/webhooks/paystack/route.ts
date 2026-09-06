@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { fromPaystackMinorUnits, isValidPaystackSignature } from "@/lib/paystack";
+import { isValidPaystackSignature, paidAmountInMajorUnits } from "@/lib/paystack";
 import { sendOrderNotificationsForReference } from "@/lib/order-confirmation";
 
 export const dynamic = "force-dynamic";
@@ -20,15 +20,26 @@ export async function POST(request: Request) {
   if (contentLength > 1_048_576) {
     return NextResponse.json({ error: "Request is too large." }, { status: 413 });
   }
-  const rawBody = await request.text();
+  // Read the raw bytes so the HMAC is computed over exactly what Paystack sent
+  // (decoding to a string could otherwise alter byte sequences before hashing).
+  const rawBody = Buffer.from(await request.arrayBuffer());
   const signature = request.headers.get("x-paystack-signature") ?? "";
   if (!isValidPaystackSignature(rawBody, signature)) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 401 });
   }
 
-  let event: { event?: string; data?: { status?: string; reference?: string; amount?: number; currency?: string } };
+  let event: {
+    event?: string;
+    data?: {
+      status?: string;
+      reference?: string;
+      amount?: number;
+      requested_amount?: number | null;
+      currency?: string;
+    };
+  };
   try {
-    event = JSON.parse(rawBody);
+    event = JSON.parse(rawBody.toString("utf8"));
   } catch {
     // Signed but unparseable — acknowledge without retry.
     return NextResponse.json({ received: true });
@@ -39,16 +50,17 @@ export async function POST(request: Request) {
   }
 
   const payment = event.data;
-  if (!payment?.reference || payment.status !== "success" || typeof payment.amount !== "number" || !payment.currency) {
+  const verifiedAmount = payment?.requested_amount ?? payment?.amount;
+  if (!payment?.reference || payment.status !== "success" || typeof verifiedAmount !== "number" || !payment.currency) {
     // Paystack delivered a malformed success event; acknowledge so it stops retrying.
     console.error("Paystack webhook: malformed charge.success payload", { payment });
     return NextResponse.json({ received: true });
   }
 
   try {
-    const { error } = await createAdminSupabase().rpc("fulfill_paid_order", {
+    const { data, error } = await createAdminSupabase().rpc("fulfill_paid_order", {
       order_reference: payment.reference,
-      paid_amount: fromPaystackMinorUnits(payment.amount, payment.currency),
+      paid_amount: paidAmountInMajorUnits(payment),
       paid_currency: payment.currency,
     });
     if (error) {
@@ -56,7 +68,7 @@ export async function POST(request: Request) {
       // fixed by Paystack retrying forever. The verify/callback path will surface it
       // to the customer; support can reconcile via the order reference.
       console.error("Paystack webhook: fulfillment skipped", { reference: payment.reference, error: error.message });
-    } else {
+    } else if (data === "paid" || data === "already_paid") {
       // Send the confirmation email EXACTLY ONCE. Fulfillment is idempotent, so a
       // duplicate delivery re-runs it harmlessly; the claim gates only the email.
       // A duplicate webhook (or a racing verify call) sees claimed=false and skips

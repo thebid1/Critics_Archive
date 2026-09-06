@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
-import { fromPaystackMinorUnits, verifyPaystackTransaction } from "@/lib/paystack";
+import { paidAmountInMajorUnits, verifyPaystackTransaction } from "@/lib/paystack";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { sendOrderNotificationsForReference } from "@/lib/order-confirmation";
 import { verifySchema } from "@/lib/validation";
@@ -62,26 +62,31 @@ export async function POST(request: Request) {
     }
     const { data, error } = await createAdminSupabase().rpc("fulfill_paid_order", {
       order_reference: reference,
-      paid_amount: fromPaystackMinorUnits(payment.data.amount, payment.data.currency),
+      paid_amount: paidAmountInMajorUnits(payment.data),
       paid_currency: payment.data.currency,
     });
     if (error) throw error;
-    // Exactly-once email: share the webhook's claim so a racing webhook/verify
-    // can't double-send. Fulfillment is idempotent regardless.
-    const { data: claimed } = await createAdminSupabase().rpc("claim_paystack_event", {
-      p_reference: reference,
-      p_event: "charge.success",
-    });
-    if (claimed === true) {
-      try {
-        await sendOrderNotificationsForReference(reference);
-      } catch (emailError: unknown) {
-        console.error("Order emails: unexpected failure", emailError instanceof Error ? emailError.message : "Unknown error");
+    // Only email on a successful fulfillment. The RPC raises on amount/currency
+    // mismatch (the `error` path above); this explicit success check also guards
+    // against any non-success return value ever reaching the email block.
+    if (data === "paid" || data === "already_paid") {
+      // Exactly-once email: share the webhook's claim so a racing webhook/verify
+      // can't double-send. Fulfillment is idempotent regardless.
+      const { data: claimed } = await createAdminSupabase().rpc("claim_paystack_event", {
+        p_reference: reference,
+        p_event: "charge.success",
+      });
+      if (claimed === true) {
+        try {
+          await sendOrderNotificationsForReference(reference);
+        } catch (emailError: unknown) {
+          console.error("Order emails: unexpected failure", emailError instanceof Error ? emailError.message : "Unknown error");
+        }
       }
     }
     return NextResponse.json({ status: data === "already_paid" ? "paid" : data });
   } catch (error) {
-    console.error("Paystack verification failed", error instanceof Error ? error.message : "Unknown error");
+    console.error("Paystack verification failed", error);
     return NextResponse.json({ error: "Payment verification failed." }, { status: 500 });
   }
 }

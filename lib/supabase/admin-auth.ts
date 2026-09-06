@@ -15,7 +15,7 @@ import type { Database } from "@/lib/supabase/database.types";
  * enforced by Supabase Auth itself; the allow-list check in lib/admin/guard.ts
  * is what keeps non-listed users out of admin data.
  */
-export function createAdminAuthClient() {
+export async function createAdminAuthClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
   if (!url || !key) {
@@ -24,15 +24,17 @@ export function createAdminAuthClient() {
     );
   }
 
+  const cookieStore = await cookies();
+
   return createServerClient<Database>(url, key, {
     cookies: {
       getAll() {
-        return cookies().getAll();
+        return cookieStore.getAll();
       },
       setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookies().set(name, value, options)
+            cookieStore.set(name, value, options)
           );
         } catch {
           // Called from a Server Component. Safe to ignore when middleware

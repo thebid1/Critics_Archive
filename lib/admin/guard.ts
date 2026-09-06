@@ -12,7 +12,7 @@ import { isAllowedAdminEmail } from "@/lib/admin/allowlist";
  *  - non-listed users get signed out here, not just blocked.
  */
 export async function getAdminUser(): Promise<{ email: string } | null> {
-  const supabase = createAdminAuthClient();
+  const supabase = await createAdminAuthClient();
   const { data, error } = await supabase.auth.getUser();
   const email = data.user?.email;
   if (error || !email || !isAllowedAdminEmail(email)) {

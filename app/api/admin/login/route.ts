@@ -62,7 +62,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const supabase = createAdminAuthClient();
+    const supabase = await createAdminAuthClient();
     // Resolve the PUBLIC origin deterministically. On Vercel, the real host/proto
     // arrive in x-forwarded-* headers; reading them (rather than request.url or
     // an env var) guarantees the magic link returns to prod — never localhost.

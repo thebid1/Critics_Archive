@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/admin";
 
   if (code) {
-    const supabase = createAdminAuthClient();
+    const supabase = await createAdminAuthClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       const {

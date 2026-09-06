@@ -44,12 +44,12 @@ function isImageUrl(value: unknown): value is string {
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAdminRequest();
   if (!auth.ok) return auth.response;
 
-  const id = asUuid(params.id);
+  const id = asUuid((await params).id);
   if (!id) return NextResponse.json({ error: "Invalid product id." }, { status: 400 });
 
   try {
@@ -65,12 +65,12 @@ export async function GET(
 }
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAdminRequest();
   if (!auth.ok) return auth.response;
 
-  const id = asUuid(params.id);
+  const id = asUuid((await params).id);
   if (!id) return NextResponse.json({ error: "Invalid product id." }, { status: 400 });
 
   if (request.headers.get("content-type")?.split(";", 1)[0] !== "application/json") {

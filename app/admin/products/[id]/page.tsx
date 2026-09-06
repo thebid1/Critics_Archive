@@ -8,11 +8,12 @@ export const dynamic = "force-dynamic";
 export default async function EditProductPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   await requireAdmin();
+  const { id } = await params;
   const [product, drops] = await Promise.all([
-    getAdminProduct(params.id),
+    getAdminProduct(id),
     listAdminDrops(),
   ]);
   if (!product) notFound();

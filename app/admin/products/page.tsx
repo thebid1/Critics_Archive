@@ -15,11 +15,12 @@ export const dynamic = "force-dynamic";
 export default async function AdminProductsPage({
   searchParams,
 }: {
-  searchParams: { q?: string; archived?: string };
+  searchParams: Promise<{ q?: string; archived?: string }>;
 }) {
   await requireAdmin();
-  const q = searchParams.q?.slice(0, 120) ?? "";
-  const includeArchived = searchParams.archived === "1";
+  const sp = await searchParams;
+  const q = sp.q?.slice(0, 120) ?? "";
+  const includeArchived = sp.archived === "1";
   const products = await listAdminProducts({ q, includeArchived });
 
   return (

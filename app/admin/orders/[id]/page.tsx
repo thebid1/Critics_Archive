@@ -17,10 +17,11 @@ export const dynamic = "force-dynamic";
 export default async function AdminOrderDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   await requireAdmin();
-  const order = await getAdminOrder(params.id);
+  const { id } = await params;
+  const order = await getAdminOrder(id);
   if (!order) notFound();
 
   const address = [order.address_line1, order.address_line2, order.city, order.state, order.country]

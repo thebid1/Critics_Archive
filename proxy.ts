@@ -3,17 +3,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/supabase/database.types";
 
 /**
- * Middleware — session REFRESH + a coarse login redirect for ADMIN routes only.
- *
- * This is explicitly NOT a security boundary: every /admin page and every admin
- * API route re-verifies the allow-listed session server-side (lib/admin/guard.ts).
- * Middleware exists so @supabase/ssr can rotate refresh tokens in the background
- * and so unauthenticated browsers skip the admin bundle.
- *
- * Matcher is scoped to auth/admin paths only — the public storefront (/, /shop,
- * /product/*, /checkout) is never touched and never sees an auth cookie.
+ * proxy.ts (renamed from middleware.ts in Next 16) — session REFRESH + a coarse
+ * login redirect for ADMIN routes only. Not a security boundary: /admin pages
+ * and APIs re-verify the allow-listed session server-side.
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
   });
@@ -44,17 +38,10 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Already signed in and hitting the login page → let the /admin page's own
-  // server-side gate settle the allow-list (middleware can't read the non-public
-  // ADMIN_ALLOWED_EMAILS env at the edge).
   if (pathname === "/login" && user) {
     return NextResponse.redirect(new URL("/admin", request.url));
   }
 
-  // Admin pages require a signed-in user; the allow-list itself is enforced
-  // server-side by the pages/routes (middleware only redirects signed-OUT users).
-  // NOTE: /auth/callback is deliberately NOT gated here — it has no session yet
-  // by design (it's the route that exchanges the magic-link code for one).
   if (pathname.startsWith("/admin") && !user) {
     return NextResponse.redirect(new URL("/login", request.url));
   }

@@ -443,8 +443,16 @@ export async function sendNewsletterWelcomeEmail(options: {
           <tr><td style="padding:24px 32px 8px">
             <h2 style="margin:0;font-size:22px;line-height:1.25;color:#0a0a09">We don&apos;t follow culture.<br />We archive it.</h2>
           </td></tr>
-          <tr><td style="padding:12px 32px 24px">
+          <tr><td style="padding:12px 32px 20px">
             <p style="margin:0;font-size:14px;color:#333;line-height:1.7">Welcome to the archive. CRITICS is built on the belief that personal style is the highest form of self-expression. Each piece is designed to hold meaning beyond the season — made to be worn, studied, and kept. SWAG IS ART is not a slogan. It is a conviction.</p>
+          </td></tr>
+          <tr><td style="padding:0 32px 20px">
+            <p style="margin:0;font-size:13px;color:#555">You&apos;re on the list. Here&apos;s what that means:</p>
+            <ul style="margin:10px 0 0;padding-left:18px;font-size:14px;color:#333;line-height:1.8">
+              <li>Be the first to know about new drops</li>
+              <li>Member discounts &amp; promotions</li>
+              <li>Early access to limited pieces</li>
+            </ul>
           </td></tr>
           <tr><td style="padding:0 32px 24px">
             <a href="${safeShopUrl}" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:14px 28px;font-size:15px;font-weight:bold;letter-spacing:1px;border-radius:4px">Browse the drop</a>

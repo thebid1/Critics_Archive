@@ -12,10 +12,11 @@ import ProductForm from "@/components/ProductForm";
 // never be statically prerendered).
 export const dynamic = "force-dynamic";
 
-type Props = { params: { slug: string } };
+type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const product = await getProductDetailBySlug(params.slug);
+  const { slug } = await params;
+  const product = await getProductDetailBySlug(slug);
   if (!product) return { title: "Not found — CRITICS ARCHIVE" };
   return {
     title: `${product.name} — CRITICS ARCHIVE`,
@@ -24,7 +25,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
-  const product = await getProductDetailBySlug(params.slug);
+  const { slug } = await params;
+  const product = await getProductDetailBySlug(slug);
   if (!product) notFound();
 
   const chartName = PRODUCT_SIZE_CHART[product.slug];

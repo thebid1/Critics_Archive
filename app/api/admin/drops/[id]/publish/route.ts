@@ -13,12 +13,12 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAdminRequest();
   if (!auth.ok) return auth.response;
 
-  const id = asUuid(params.id);
+  const id = asUuid((await params).id);
   if (!id) return NextResponse.json({ error: "Invalid drop id." }, { status: 400 });
 
   try {

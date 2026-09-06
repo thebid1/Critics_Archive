@@ -24,11 +24,12 @@ const STATUS_FILTERS = [
 export default async function AdminOrdersPage({
   searchParams,
 }: {
-  searchParams: { q?: string; status?: string };
+  searchParams: Promise<{ q?: string; status?: string }>;
 }) {
   await requireAdmin();
-  const q = searchParams.q?.slice(0, 120) ?? "";
-  const status = searchParams.status ?? "";
+  const sp = await searchParams;
+  const q = sp.q?.slice(0, 120) ?? "";
+  const status = sp.status ?? "";
   const orders = await listAdminOrders({ q, status: status || undefined });
 
   return (

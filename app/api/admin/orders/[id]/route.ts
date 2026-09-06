@@ -7,12 +7,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET(
   _request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAdminRequest();
   if (!auth.ok) return auth.response;
 
-  const id = asUuid(params.id);
+  const id = asUuid((await params).id);
   if (!id) return NextResponse.json({ error: "Invalid order id." }, { status: 400 });
 
   try {

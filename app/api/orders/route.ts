@@ -98,7 +98,7 @@ export async function POST(request: Request) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
     const payment = await initializePaystackTransaction({
       email: input.email,
-      amount: toPaystackMinorUnits(total, currency),
+      amountMinorUnits: toPaystackMinorUnits(total, currency),
       currency,
       reference,
       callbackUrl: `${siteUrl}/checkout`,
