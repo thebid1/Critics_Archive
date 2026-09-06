@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "CRITICS ARCHIVE — SWAG IS ART",
   description:
-    "CRITICS ARCHIVE. A small, curated streetwear catalogue. We don't follow culture — we archive it. Drop 001, SS26. SWAG IS ART.",
+    "CRITICS ARCHIVE. We don't follow culture — we archive it. SWAG IS ART.",
   keywords: [
     "CRITICS ARCHIVE",
     "streetwear",
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     siteName: "CRITICS ARCHIVE",
     title: "CRITICS ARCHIVE — SWAG IS ART",
     description:
-      "A small, curated streetwear catalogue. We don't follow culture — we archive it. SWAG IS ART.",
+      "We don't follow culture — we archive it. SWAG IS ART.",
     locale: "en_US",
     images: [
       {
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "CRITICS ARCHIVE — SWAG IS ART",
-    description: "A small, curated streetwear catalogue. SWAG IS ART.",
+    description: "We don't follow culture — we archive it. SWAG IS ART.",
     images: ["/critics_archive_logo.jpeg"],
   },
   icons: {
