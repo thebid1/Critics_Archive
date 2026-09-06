@@ -242,12 +242,14 @@ export type PaystackEventsUpdate = Partial<PaystackEventsInsert>;
 export type NewsletterSubscribersRow = {
   id: string;
   email: string;
+  unsubscribed_at: string | null;
   created_at: string;
 };
 
 export type NewsletterSubscribersInsert = {
   id?: string;
   email: string;
+  unsubscribed_at?: string | null;
   created_at?: string;
 };
 

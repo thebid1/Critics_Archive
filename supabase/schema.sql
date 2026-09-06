@@ -723,6 +723,7 @@ alter table paystack_events enable row level security;
 create table newsletter_subscribers (
   id         uuid primary key default gen_random_uuid(),
   email      text not null unique,
+  unsubscribed_at timestamptz,
   created_at timestamptz not null default now()
 );
 

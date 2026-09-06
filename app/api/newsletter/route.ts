@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { newsletterSchema } from "@/lib/validation";
+import { sendNewsletterWelcomeEmail } from "@/lib/resend";
 
 export const dynamic = "force-dynamic";
 
@@ -43,16 +44,32 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { error } = await createAdminSupabase()
+    const supabase = createAdminSupabase();
+    const { data, error } = await supabase
       .from("newsletter_subscribers")
-      .insert({ email: parsed.data.email });
+      .insert({ email: parsed.data.email })
+      .select("id")
+      .single();
     if (error) {
-      // Duplicate email → treat as success (idempotent subscribe).
+      // Duplicate email → treat as success (idempotent subscribe), no re-send.
       if (error.code === "23505") {
         return NextResponse.json({ ok: true });
       }
       throw error;
     }
+
+    // Welcome email (best-effort — a send failure never fails the subscribe).
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+    const subscriberId = (data as { id: string }).id;
+    const sendError = await sendNewsletterWelcomeEmail({
+      email: parsed.data.email,
+      unsubscribeUrl: `${siteUrl}/api/unsubscribe?token=${subscriberId}`,
+      shopUrl: `${siteUrl}/#shop`,
+    });
+    if (sendError) {
+      console.error("Newsletter welcome email failed", { error: sendError });
+    }
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("Newsletter subscribe failed", error instanceof Error ? error.message : "Unknown error");

@@ -1,0 +1,15 @@
+name: Expire pending orders
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  expire:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger expire_pending_orders
+        run: |
+          curl -f --retry 3 -X GET "https://criticsarchive.vercel.app/api/cron/expire-pending" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

@@ -400,3 +400,85 @@ export async function sendNewOrderNotificationEmail(
     return reason instanceof Error ? reason.message : "Unknown email send failure";
   }
 }
+
+/**
+ * Newsletter "welcome" email — sent when someone subscribes in the Community
+ * section. From COMMUNITY_FROM_EMAIL, carries the CRITICS statement, a big
+ * "Browse the drop" button, and an unsubscribe link.
+ */
+export async function sendNewsletterWelcomeEmail(options: {
+  email: string;
+  unsubscribeUrl: string;
+  shopUrl: string;
+}): Promise<string | null> {
+  const client = getResend();
+  const communityFrom = process.env.COMMUNITY_FROM_EMAIL ?? "";
+  if (!client || !communityFrom) {
+    return "Community email is not configured (RESEND_API_KEY / COMMUNITY_FROM_EMAIL)";
+  }
+
+  const wordmark = readFileSync(
+    path.join(process.cwd(), "public", "critics-archive-wordmark.png")
+  );
+  const safeUnsubscribe = escapeHtml(options.unsubscribeUrl);
+  const safeShopUrl = escapeHtml(options.shopUrl);
+
+  const html = `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+  </head>
+  <body style="margin:0;padding:0;background:#f7f6f1;font-family:Arial,Helvetica,sans-serif">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f6f1;padding:24px">
+      <tr><td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid #e5e2da;border-radius:4px">
+          <tr>
+            <td bgcolor="#000000" style="padding:32px 32px 16px;background:#000000 !important;background-color:#000000 !important;color:#ffffff !important">
+              <img src="cid:critics-archive-wordmark" alt="Critics Archive" width="220" height="33" style="display:block;width:220px;height:33px;object-fit:contain;object-position:left" />
+              <p style="margin:10px 0 0;font-size:12px;letter-spacing:2px;color:#f4f3ed">SWAG IS ART</p>
+            </td>
+          </tr>
+          <tr><td style="padding:24px 32px 8px">
+            <h2 style="margin:0;font-size:22px;line-height:1.25;color:#0a0a09">We don&apos;t follow culture.<br />We archive it.</h2>
+          </td></tr>
+          <tr><td style="padding:12px 32px 24px">
+            <p style="margin:0;font-size:14px;color:#333;line-height:1.7">Welcome to the archive. CRITICS is built on the belief that personal style is the highest form of self-expression. Each piece is designed to hold meaning beyond the season — made to be worn, studied, and kept. SWAG IS ART is not a slogan. It is a conviction.</p>
+          </td></tr>
+          <tr><td style="padding:0 32px 24px">
+            <a href="${safeShopUrl}" style="display:inline-block;background:#000000;color:#ffffff;text-decoration:none;padding:14px 28px;font-size:15px;font-weight:bold;letter-spacing:1px;border-radius:4px">Browse the drop</a>
+          </td></tr>
+          <tr>
+            <td bgcolor="#000000" style="padding:16px 32px 24px;background:#000000 !important;background-color:#000000 !important;color:#ffffff !important">
+              <img src="${FOOTER_LOGO_IMAGE}" alt="Critics Archive logo" width="40" height="40" style="display:block;width:40px;height:40px;object-fit:contain" />
+              <p style="margin:10px 0 0;font-size:11px;color:#f4f3ed;letter-spacing:1px">CRITICS ARCHIVE — SWAG IS ART.</p>
+              <p style="margin:12px 0 0;font-size:12px;color:#f4f3ed"><a href="${safeUnsubscribe}" style="color:#f4f3ed;text-decoration:underline">Unsubscribe</a></p>
+            </td>
+          </tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+
+  try {
+    const { error } = await client.emails.send({
+      from: `Critics Archive <${communityFrom}>`,
+      to: options.email,
+      subject: "Welcome to the archive",
+      html,
+      attachments: [
+        {
+          filename: "critics-archive-wordmark.png",
+          content: wordmark,
+          contentType: "image/png",
+          contentId: "critics-archive-wordmark",
+        },
+      ],
+    });
+    return error?.message ?? null;
+  } catch (reason) {
+    return reason instanceof Error ? reason.message : "Unknown email send failure";
+  }
+}
