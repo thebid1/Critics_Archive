@@ -69,7 +69,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/critics-archive-wordmark.png",
+        url: "/critics_archive_logo.jpeg",
         alt: "CRITICS ARCHIVE — SWAG IS ART",
       },
     ],
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "CRITICS ARCHIVE — SWAG IS ART",
     description: "A small, curated streetwear catalogue. SWAG IS ART.",
-    images: ["/critics-archive-wordmark.png"],
+    images: ["/critics_archive_logo.jpeg"],
   },
   icons: {
     icon: "/favicon.png",
