@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 export default function ComingSoonGate() {
@@ -39,11 +40,15 @@ export default function ComingSoonGate() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-ink px-4 text-bone">
       <div className="w-full max-w-sm text-center">
-        <p className="font-script text-4xl text-bone">Critics Archive</p>
-        <h1 className="mt-4 font-display text-5xl uppercase leading-none text-bone">
-          Coming soon
-        </h1>
-        <p className="mt-3 font-label text-xs uppercase tracking-widest2 text-bone-dim">
+        <Image
+          src="/critics-archive-wordmark.png"
+          alt="CRITICS ARCHIVE"
+          width={220}
+          height={29}
+          priority
+          className="mx-auto h-6 w-auto"
+        />
+        <p className="mt-4 font-label text-xs uppercase tracking-widest2 text-bone-dim">
           Swag is art
         </p>
 
@@ -64,7 +69,7 @@ export default function ComingSoonGate() {
           >
             {busy ? "Checking…" : "Enter"}
           </button>
-          {error && <p className="mt-3 font-body text-sm text-red-400">{error}</p>}
+          {error && <p className="mt-3 font-body text-sm text-accent">{error}</p>}
         </form>
       </div>
     </main>

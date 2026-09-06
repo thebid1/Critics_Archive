@@ -14,35 +14,41 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-hairline bg-ink/95 backdrop-blur">
-      <div className="container-page flex h-16 items-center justify-between sm:h-20">
+      <div className="container-page relative flex h-16 items-center sm:h-20">
         <Link
           href="/"
-          className="flex items-center gap-1"
+          className="relative block h-11 w-11 shrink-0 sm:h-12 sm:w-12"
           aria-label="CRITICS ARCHIVE — home"
         >
-          <span className="relative block h-11 w-11 shrink-0 sm:h-12 sm:w-12">
-            <Image
-              src={LOGO_IMAGE}
-              alt=""
-              fill
-              priority
-              sizes="40px"
-              className="object-contain"
-            />
-          </span>
-          <span className="relative block h-[29px] w-[220px] shrink-0 sm:h-[33px] sm:w-[250px]">
+          <Image
+            src={LOGO_IMAGE}
+            alt=""
+            fill
+            priority
+            sizes="40px"
+            className="object-contain"
+          />
+        </Link>
+
+        {/* Centered wordmark — independent of the side elements, so it stays dead-centre. */}
+        <Link
+          href="/"
+          aria-label="CRITICS ARCHIVE — home"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        >
+          <span className="relative block h-[24px] w-[180px] sm:h-[29px] sm:w-[220px]">
             <Image
               src="/critics-archive-wordmark.png"
               alt="Critics Archive"
               fill
               priority
-              sizes="(min-width: 640px) 250px, 220px"
-              className="object-contain object-left"
+              sizes="220px"
+              className="object-contain"
             />
           </span>
         </Link>
 
-        <div className="flex items-center gap-4 text-bone">
+        <div className="ml-auto flex items-center gap-4 text-bone">
           <button
             type="button"
             onClick={open}
