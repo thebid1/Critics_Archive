@@ -26,8 +26,8 @@ export default function PrivacyPage() {
           <div className="mt-12 max-w-2xl space-y-10">
             <Section title="Who we are">
               <p>
-                CRITICS ARCHIVE (&ldquo;we&rdquo;, &ldquo;us&rdquo;) is a small, curated
-                streetwear catalogue. This policy explains what we collect, why, and the
+                CRITICS ARCHIVE (&ldquo;we&rdquo;, &ldquo;us&rdquo;) — we don&apos;t follow
+                culture, we archive it. This policy explains what we collect, why, and the
                 choices you have. Questions? Contact{" "}
                 <a
                   href="mailto:support@criticsarchive.com"
