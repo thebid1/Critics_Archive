@@ -319,7 +319,7 @@ export async function sendNewOrderNotificationEmail(
     .filter(Boolean)
     .join(", ");
   const adminUrl = `${
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+    process.env.ADMIN_SITE_URL ?? "https://admin.criticsarchive.com"
   }/admin/orders/${order.orderId}`;
 
   const itemRows = order.items
