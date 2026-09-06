@@ -729,6 +729,18 @@ create table newsletter_subscribers (
 
 alter table newsletter_subscribers enable row level security;
 
+-- Site-wide pre-launch password gate (client: "password protect the site until
+-- launch, disable from the admin page"). Key-value store read by proxy.ts on
+-- every storefront request (one fetch). NO RLS policies on purpose — only the
+-- service_role key (RLS-bypassing) may read/write; the hash must never be
+-- readable by the anon/authenticated roles.
+create table site_settings (
+  key   text primary key,
+  value text not null
+);
+
+alter table site_settings enable row level security;
+
 -- Atomically claim a webhook event. Returns true if this call inserted a new row
 -- (we own the event and should process it), false if the reference was already
 -- seen (duplicate delivery — skip).

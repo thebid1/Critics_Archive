@@ -1,6 +1,11 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/supabase/database.types";
+import {
+  getSiteGateSettings,
+  isValidUnlock,
+  SITE_UNLOCK_COOKIE,
+} from "@/lib/site-gate";
 
 /**
  * proxy.ts (renamed from middleware.ts in Next 16) — host-based routing between
@@ -19,6 +24,16 @@ function isProdStorefront(host: string): boolean {
   return host === "www.criticsarchive.com" || host === "criticsarchive.com";
 }
 
+/** Storefront pages covered by the pre-launch password gate. */
+function isLockedPath(pathname: string): boolean {
+  return (
+    pathname === "/" ||
+    pathname.startsWith("/shop") ||
+    pathname.startsWith("/product/") ||
+    pathname.startsWith("/checkout")
+  );
+}
+
 export async function proxy(request: NextRequest) {
   const host = request.headers.get("host") ?? "";
   const { pathname } = request.nextUrl;
@@ -32,10 +47,21 @@ export async function proxy(request: NextRequest) {
     ) {
       return NextResponse.redirect(new URL(pathname, ADMIN_ORIGIN));
     }
-    return NextResponse.next();
   }
 
   const adminHost = isAdminHost(host);
+
+  // Pre-launch password gate: only the storefront (never the admin host), and only
+  // the shop paths (/, /shop, /product/*, /checkout). Info/legal pages stay public.
+  if (!adminHost && isLockedPath(pathname)) {
+    const { enabled, hash } = await getSiteGateSettings();
+    if (enabled && hash) {
+      const cookie = request.cookies.get(SITE_UNLOCK_COOKIE)?.value ?? "";
+      if (!(await isValidUnlock(cookie, hash))) {
+        return NextResponse.redirect(new URL("/coming-soon", request.url));
+      }
+    }
+  }
 
   // Only the admin host, or admin/auth paths on any host, need a session. Skip
   // Supabase entirely for everything else (e.g. the localhost storefront).
@@ -112,5 +138,13 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/admin/:path*", "/login", "/auth/:path*"],
+  matcher: [
+    "/",
+    "/shop/:path*",
+    "/product/:path*",
+    "/checkout",
+    "/admin/:path*",
+    "/login",
+    "/auth/:path*",
+  ],
 };

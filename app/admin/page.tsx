@@ -5,6 +5,7 @@ import {
   ButtonLink,
 } from "@/components/admin/ui";
 import DropManager from "@/components/admin/DropManager";
+import SiteGateSettings from "@/components/admin/SiteGateSettings";
 import { requireAdmin } from "@/lib/admin/guard";
 import { getAdminOverview, listAdminDrops } from "@/lib/admin/data";
 
@@ -68,6 +69,10 @@ export default async function AdminDashboardPage() {
             </Card>
           </Link>
         ))}
+      </div>
+
+      <div className="mt-8">
+        <SiteGateSettings />
       </div>
 
       <div className="mt-8">

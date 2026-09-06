@@ -255,6 +255,18 @@ export type NewsletterSubscribersInsert = {
 
 export type NewsletterSubscribersUpdate = Partial<NewsletterSubscribersInsert>;
 
+export type SiteSettingsRow = {
+  key: string;
+  value: string;
+};
+
+export type SiteSettingsInsert = {
+  key: string;
+  value: string;
+};
+
+export type SiteSettingsUpdate = Partial<SiteSettingsInsert>;
+
 export type Database = {
   public: {
     Tables: {
@@ -356,6 +368,12 @@ export type Database = {
         Row: NewsletterSubscribersRow;
         Insert: NewsletterSubscribersInsert;
         Update: NewsletterSubscribersUpdate;
+        Relationships: [];
+      };
+      site_settings: {
+        Row: SiteSettingsRow;
+        Insert: SiteSettingsInsert;
+        Update: SiteSettingsUpdate;
         Relationships: [];
       };
     };
