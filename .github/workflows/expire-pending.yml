@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Trigger expire_pending_orders
         run: |
-          curl -f --retry 3 -X GET "https://criticsarchive.com/api/cron/expire-pending" \
+          curl -f --retry 3 -X GET "https://www.criticsarchive.com/api/cron/expire-pending" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

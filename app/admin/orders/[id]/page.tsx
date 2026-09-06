@@ -47,8 +47,8 @@ export default async function AdminOrderDetailPage({
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-6">
           <Card title={`Items (${order.items.length})`}>
             {order.items.length === 0 ? (
               <EmptyState title="No line items" body="This order has no recorded items." />
@@ -146,7 +146,7 @@ export default async function AdminOrderDetailPage({
           </Card>
         </div>
 
-        <aside className="space-y-6">
+        <aside className="min-w-0 space-y-6">
           <Card title="Customer">
             <dl className="space-y-2 text-sm">
               <div>

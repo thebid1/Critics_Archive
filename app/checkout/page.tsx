@@ -31,7 +31,7 @@ type CheckoutForm = {
   state: string;
 };
 
-const DELIVERY_FEE = 100;
+const DELIVERY_FEE = 7000;
 
 declare global {
   interface Window {

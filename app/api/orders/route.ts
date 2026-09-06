@@ -6,7 +6,7 @@ import { checkoutSchema } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
-const DELIVERY_FEE = 100;
+const DELIVERY_FEE = 7000;
 
 /** Read + JSON-parse the body, enforcing a hard size cap even without Content-Length. */
 async function readJsonBody(request: Request): Promise<

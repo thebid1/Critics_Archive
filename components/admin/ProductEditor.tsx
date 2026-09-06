@@ -163,8 +163,8 @@ export default function ProductEditor({
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <form onSubmit={save} className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <form onSubmit={save} className="min-w-0 space-y-6">
           <Card title="Details">
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Name">
@@ -271,7 +271,7 @@ export default function ProductEditor({
           </div>
         </form>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Card title={`Images (${images.length})`}>
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-gray-700">Add image</span>
