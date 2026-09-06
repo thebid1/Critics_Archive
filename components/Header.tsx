@@ -45,13 +45,6 @@ export default function Header() {
         <div className="flex items-center gap-4 text-bone">
           <button
             type="button"
-            aria-label="Search"
-            className="rounded-full p-2 transition-colors hover:text-accent"
-          >
-            <SearchIcon />
-          </button>
-          <button
-            type="button"
             onClick={open}
             aria-label={`Open bag, ${count} ${count === 1 ? "item" : "items"}`}
             className="relative rounded-full p-2 transition-colors hover:text-accent"
@@ -67,15 +60,6 @@ export default function Header() {
       </div>
 
     </header>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.6" />
-      <path d="M20 20L16.65 16.65" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
   );
 }
 
