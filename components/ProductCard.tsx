@@ -19,12 +19,6 @@ export default function ProductCard({ product, priority = false }: { product: Pr
           className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         />
 
-        {product.isNew && (
-          <span className="absolute left-3 top-3 bg-accent px-2 py-1 font-label text-[10px] uppercase tracking-widest2 text-ink">
-            New
-          </span>
-        )}
-
         {!product.inStock && (
           <div className="absolute inset-0 flex items-center justify-center bg-ink/70">
             <span className="font-label text-xs uppercase tracking-widest2 text-bone">

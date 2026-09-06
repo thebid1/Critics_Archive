@@ -43,10 +43,10 @@ export default function ComingSoonGate() {
         <Image
           src="/critics-archive-wordmark.png"
           alt="CRITICS ARCHIVE"
-          width={220}
-          height={29}
+          width={280}
+          height={37}
           priority
-          className="mx-auto h-6 w-auto"
+          className="mx-auto h-8 w-auto sm:h-10"
         />
         <p className="mt-4 font-label text-xs uppercase tracking-widest2 text-bone-dim">
           Swag is art
