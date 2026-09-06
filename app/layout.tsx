@@ -81,7 +81,8 @@ export const metadata: Metadata = {
     images: ["/critics-archive-wordmark.png"],
   },
   icons: {
-    icon: "/icon.svg",
+    icon: "/favicon.png",
+    apple: "/favicon.png",
   },
 };
 
