@@ -1,23 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useCart } from "@/lib/cart";
-import { SOCIAL_LINKS, SocialIcon } from "@/components/social";
+
+// Brand logo asset (only place a logo is needed — the header). The wordmark was
+// removed from the bar; the logo lives in the drawer footer + footer now.
+const LOGO_IMAGE =
+  "https://res.cloudinary.com/dicxujpqy/image/upload/v1787873855/criticsslogo_skdyqj.png";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/shop", label: "Shop" },
+  { href: "/shop#drop-001", label: "Drop 001" },
   { href: "/sizing", label: "Sizing" },
   { href: "/shipping", label: "Shipping" },
   { href: "/returns", label: "Returns" },
   { href: "/contact", label: "Contact" },
-];
-
-const LEGAL_LINKS = [
-  { href: "/privacy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
-  { href: "/cookies", label: "Cookies" },
 ];
 
 export default function Header() {
@@ -72,80 +72,72 @@ export default function Header() {
         </button>
       </div>
 
-      {/* Slide-out drawer */}
-      {navOpen && (
-        <div className="fixed inset-0 z-50" role="dialog" aria-modal="true">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-ink/60 backdrop-blur-sm"
+      {/* Backdrop */}
+      <div
+        aria-hidden={!navOpen}
+        onClick={() => setNavOpen(false)}
+        className={`fixed inset-0 z-50 bg-ink/70 transition-opacity duration-300 ${
+          navOpen ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+      />
+
+      {/* Slide-out navigation drawer — slides from the left; same pattern as the bag. */}
+      <aside
+        id="site-nav-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation"
+        className={`fixed left-0 top-0 z-50 flex h-full w-full max-w-sm flex-col border-r border-hairline bg-ink-raised shadow-2xl transition-transform duration-300 ${
+          navOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <header className="flex items-center justify-between border-b border-hairline px-6 py-5">
+          <span className="font-label text-xs uppercase tracking-widest2 text-bone">
+            Menu
+          </span>
+          <button
+            type="button"
             onClick={() => setNavOpen(false)}
-            aria-hidden="true"
-          />
-
-          <nav
-            id="site-nav-drawer"
-            className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col overflow-y-auto border-r border-hairline bg-ink p-6 sm:w-80"
+            aria-label="Close menu"
+            className="rounded-full p-2 font-label text-bone-dim transition-colors hover:text-accent"
           >
-            <div className="mb-8 flex items-center justify-between">
-              <span className="font-label text-xs uppercase tracking-widest2 text-bone-dim">
-                Menu
-              </span>
-              <button
-                type="button"
-                onClick={() => setNavOpen(false)}
-                aria-label="Close menu"
-                className="-mr-2 rounded-md p-2 text-bone transition-colors hover:text-accent"
-              >
-                <CloseIcon />
-              </button>
-            </div>
+            ✕
+          </button>
+        </header>
 
-            <ul className="space-y-0.5">
-              {NAV_LINKS.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    onClick={() => setNavOpen(false)}
-                    className="block py-2.5 font-display text-2xl uppercase tracking-wide text-bone transition-colors hover:text-accent sm:text-3xl"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+        <nav className="flex-1 overflow-y-auto px-6 py-4">
+          <ul className="space-y-0.5">
+            {NAV_LINKS.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  onClick={() => setNavOpen(false)}
+                  className="block py-2.5 font-display text-2xl uppercase tracking-wide text-bone transition-colors hover:text-accent sm:text-3xl"
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-            <div className="mt-auto border-t border-hairline pt-6">
-              <ul className="flex flex-wrap gap-x-6 gap-y-2">
-                {LEGAL_LINKS.map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      onClick={() => setNavOpen(false)}
-                      className="font-label text-[11px] uppercase tracking-wide text-bone-dim transition-colors hover:text-accent"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-5 flex items-center gap-4">
-                {SOCIAL_LINKS.map((link) => (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={link.label}
-                    className="text-bone-dim transition-colors hover:text-accent"
-                  >
-                    <SocialIcon name={link.icon} />
-                  </a>
-                ))}
-              </div>
-            </div>
-          </nav>
-        </div>
-      )}
+        <footer className="border-t border-hairline px-6 py-5">
+          <div className="flex items-center gap-3">
+            <span className="relative block h-10 w-10 shrink-0">
+              <Image
+                src={LOGO_IMAGE}
+                alt=""
+                fill
+                sizes="40px"
+                className="object-contain"
+              />
+            </span>
+            <p className="font-display text-base uppercase tracking-widest text-bone">
+              Critics Archive
+            </p>
+          </div>
+        </footer>
+      </aside>
     </header>
   );
 }
@@ -155,19 +147,6 @@ function MenuIcon() {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M4 6h16M4 12h16M4 18h16"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M6 6l12 12M18 6L6 18"
         stroke="currentColor"
         strokeWidth="1.6"
         strokeLinecap="round"
