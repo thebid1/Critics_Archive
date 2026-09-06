@@ -64,15 +64,8 @@ export async function POST(request: Request) {
       paid_currency: payment.currency,
     });
     if (error) {
-      // Log and acknowledge: a fulfillment failure (e.g. amount mismatch) won't be
-      // fixed by Paystack retrying forever. The verify/callback path will surface it
-      // to the customer; support can reconcile via the order reference.
       console.error("Paystack webhook: fulfillment skipped", { reference: payment.reference, error: error.message });
     } else if (data === "paid" || data === "already_paid") {
-      // Send the confirmation email EXACTLY ONCE. Fulfillment is idempotent, so a
-      // duplicate delivery re-runs it harmlessly; the claim gates only the email.
-      // A duplicate webhook (or a racing verify call) sees claimed=false and skips
-      // the send — closing the confirmation-email race in security.md.
       const { data: claimed, error: claimError } = await createAdminSupabase().rpc(
         "claim_paystack_event",
         { p_reference: payment.reference, p_event: "charge.success" }
