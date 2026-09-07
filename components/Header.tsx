@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useCart } from "@/lib/cart";
 
-// Brand logo asset (only place a logo is needed — the header). The wordmark was
-// removed from the bar; the logo lives in the drawer footer + footer now.
-const LOGO_IMAGE =
-  "https://res.cloudinary.com/dicxujpqy/image/upload/v1787873855/criticsslogo_skdyqj.png";
+// FIX: Define or import your logo image source
+const LOGO_IMAGE = "https://res.cloudinary.com/dicxujpqy/image/upload/v1787873855/criticsslogo_skdyqj.png"; 
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
@@ -21,19 +20,19 @@ const NAV_LINKS = [
 ];
 
 export default function Header() {
-  const { count, open } = useCart();
+  const { count, open: openCart } = useCart();
   const [navOpen, setNavOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Close on Escape + lock body scroll while the drawer is open.
-  useEffect(() => {
-    if (!navOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setNavOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [navOpen]);
+  const drawerRef = useRef<HTMLElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const triggerButtonRef = useRef<HTMLButtonElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  // Portal target isn't available during SSR — only render the portal once mounted.
+  useEffect(() => setMounted(true), []);
+
+  // Lock body scroll while the drawer is open.
   useEffect(() => {
     document.body.style.overflow = navOpen ? "hidden" : "";
     return () => {
@@ -41,11 +40,57 @@ export default function Header() {
     };
   }, [navOpen]);
 
+  // Focus management: move focus into the drawer on open, trap Tab within it,
+  // restore focus to whatever opened it on close.
+  useEffect(() => {
+    if (navOpen) {
+      previousFocusRef.current = document.activeElement as HTMLElement;
+      closeButtonRef.current?.focus();
+    } else {
+      previousFocusRef.current?.focus();
+    }
+  }, [navOpen]);
+
+  useEffect(() => {
+    if (!navOpen) return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setNavOpen(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+
+     const focusables = drawerRef.current?.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusables || focusables.length === 0) return;
+
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+
+      // Add this line to satisfy TypeScript's strict index checking
+      if (!first || !last) return;
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [navOpen]);
+
   return (
     <header className="sticky top-0 z-40 border-b border-hairline bg-ink/95 backdrop-blur">
-      <div className="container-page flex h-16 items-center justify-between sm:h-20">
+      <div className="container-page relative flex h-16 items-center justify-between sm:h-20">
         {/* Left — hamburger */}
         <button
+          ref={triggerButtonRef}
           type="button"
           onClick={() => setNavOpen(true)}
           aria-label="Open menu"
@@ -56,10 +101,26 @@ export default function Header() {
           <MenuIcon />
         </button>
 
+        {/* Center — wordmark */}
+        <Link
+          href="/"
+          aria-label="CRITICS ARCHIVE — home"
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+        >
+          <Image
+            src="/critics-archive-wordmark.png"
+            alt="CRITICS ARCHIVE"
+            width={881}
+            height={115}
+            priority
+            className="h-9 w-auto sm:h-12"
+          />
+        </Link>
+
         {/* Right — bag */}
         <button
           type="button"
-          onClick={open}
+          onClick={openCart}
           aria-label={`Open bag, ${count} ${count === 1 ? "item" : "items"}`}
           className="relative rounded-full p-2 text-bone transition-colors hover:text-accent"
         >
@@ -72,72 +133,70 @@ export default function Header() {
         </button>
       </div>
 
-      {/* Backdrop */}
-      <div
-        aria-hidden={!navOpen}
-        onClick={() => setNavOpen(false)}
-        className={`fixed inset-0 z-50 bg-ink/70 transition-opacity duration-300 ${
-          navOpen ? "opacity-100" : "pointer-events-none opacity-0"
-        }`}
-      />
+      {mounted &&
+        createPortal(
+          <>
+            <div
+              aria-hidden={!navOpen}
+              onClick={() => setNavOpen(false)}
+              className={`fixed inset-0 z-50 bg-ink/70 transition-opacity duration-300 ${
+                navOpen ? "opacity-100" : "pointer-events-none opacity-0"
+              }`}
+            />
 
-      {/* Slide-out navigation drawer — slides from the left; same pattern as the bag. */}
-      <aside
-        id="site-nav-drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Navigation"
-        className={`fixed left-0 top-0 z-50 flex h-full w-full max-w-sm flex-col border-r border-hairline bg-ink-raised shadow-2xl transition-transform duration-300 ${
-          navOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <header className="flex items-center justify-between border-b border-hairline px-6 py-5">
-          <span className="font-label text-xs uppercase tracking-widest2 text-bone">
-            Menu
-          </span>
-          <button
-            type="button"
-            onClick={() => setNavOpen(false)}
-            aria-label="Close menu"
-            className="rounded-full p-2 font-label text-bone-dim transition-colors hover:text-accent"
-          >
-            ✕
-          </button>
-        </header>
-
-        <nav className="flex-1 overflow-y-auto px-6 py-4">
-          <ul className="space-y-0.5">
-            {NAV_LINKS.map((link) => (
-              <li key={link.href}>
-                <Link
-                  href={link.href}
+            <aside
+  ref={drawerRef}
+  id="site-nav-drawer"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Navigation"
+  inert={!navOpen}
+  // Changed max-w-sm to max-w-xs below 
+  className={`fixed left-0 top-0 z-50 flex h-full w-full max-w-xs flex-col border-r border-hairline bg-ink-raised shadow-2xl transition-transform duration-300 ${
+    navOpen ? "translate-x-0" : "-translate-x-full"
+  }`}
+>
+              <div className="flex items-center justify-between border-b border-hairline px-6 py-5">
+                <span className="font-label text-xs uppercase tracking-widest2 text-bone">Menu</span>
+                <button
+                  ref={closeButtonRef}
+                  type="button"
                   onClick={() => setNavOpen(false)}
-                  className="block py-2.5 font-display text-2xl uppercase tracking-wide text-bone transition-colors hover:text-accent sm:text-3xl"
+                  aria-label="Close menu"
+                  className="rounded-full p-2 font-label text-bone-dim transition-colors hover:text-accent"
                 >
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+                  ✕
+                </button>
+              </div>
 
-        <footer className="border-t border-hairline px-6 py-5">
-          <div className="flex items-center gap-3">
-            <span className="relative block h-10 w-10 shrink-0">
-              <Image
-                src={LOGO_IMAGE}
-                alt=""
-                fill
-                sizes="40px"
-                className="object-contain"
-              />
-            </span>
-            <p className="font-display text-base uppercase tracking-widest text-bone">
-              Critics Archive
-            </p>
-          </div>
-        </footer>
-      </aside>
+              <nav className="flex-1 overflow-y-auto px-6 py-4">
+                <ul className="space-y-0.5">
+                  {NAV_LINKS.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        onClick={() => setNavOpen(false)}
+                        className="block py-2.5 font-display text-2xl uppercase tracking-wide text-bone transition-colors hover:text-accent sm:text-3xl"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+
+              <div className="border-t border-hairline px-6 py-5">
+                <div className="flex items-center gap-3">
+                  <span className="relative block h-10 w-10 shrink-0">
+                    <Image src={LOGO_IMAGE} alt="" fill sizes="40px" className="object-contain" />
+                  </span>
+                  <p className="font-display text-base uppercase tracking-widest text-bone">Critics Archive</p>
+                </div>
+              </div>
+            </aside>
+          </>,
+          document.body
+        )}
     </header>
   );
 }
@@ -145,12 +204,7 @@ export default function Header() {
 function MenuIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 6h16M4 12h16M4 18h16"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
+      <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   );
 }
