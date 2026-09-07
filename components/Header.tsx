@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCart } from "@/lib/cart";
 
-// FIX: Define or import your logo image source
 const LOGO_IMAGE = "https://res.cloudinary.com/dicxujpqy/image/upload/v1787873855/criticsslogo_skdyqj.png"; 
 
 const NAV_LINKS = [
@@ -29,10 +28,8 @@ export default function Header() {
   const triggerButtonRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  // Portal target isn't available during SSR — only render the portal once mounted.
   useEffect(() => setMounted(true), []);
 
-  // Lock body scroll while the drawer is open.
   useEffect(() => {
     document.body.style.overflow = navOpen ? "hidden" : "";
     return () => {
@@ -40,8 +37,6 @@ export default function Header() {
     };
   }, [navOpen]);
 
-  // Focus management: move focus into the drawer on open, trap Tab within it,
-  // restore focus to whatever opened it on close.
   useEffect(() => {
     if (navOpen) {
       previousFocusRef.current = document.activeElement as HTMLElement;
@@ -61,7 +56,7 @@ export default function Header() {
       }
       if (e.key !== "Tab") return;
 
-     const focusables = drawerRef.current?.querySelectorAll<HTMLElement>(
+      const focusables = drawerRef.current?.querySelectorAll<HTMLElement>(
         'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
       if (!focusables || focusables.length === 0) return;
@@ -69,7 +64,6 @@ export default function Header() {
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
 
-      // Add this line to satisfy TypeScript's strict index checking
       if (!first || !last) return;
 
       if (e.shiftKey && document.activeElement === first) {
@@ -101,7 +95,7 @@ export default function Header() {
           <MenuIcon />
         </button>
 
-        {/* Center — wordmark */}
+        {/* Center — wordmark (MADE SMALLER) */}
         <Link
           href="/"
           aria-label="CRITICS ARCHIVE — home"
@@ -113,7 +107,7 @@ export default function Header() {
             width={881}
             height={115}
             priority
-            className="h-9 w-auto sm:h-12"
+            className="h-6 w-auto sm:h-8" 
           />
         </Link>
 
@@ -145,17 +139,16 @@ export default function Header() {
             />
 
             <aside
-  ref={drawerRef}
-  id="site-nav-drawer"
-  role="dialog"
-  aria-modal="true"
-  aria-label="Navigation"
-  inert={!navOpen}
-  // Changed max-w-sm to max-w-xs below 
-  className={`fixed left-0 top-0 z-50 flex h-full w-full max-w-xs flex-col border-r border-hairline bg-ink-raised shadow-2xl transition-transform duration-300 ${
-    navOpen ? "translate-x-0" : "-translate-x-full"
-  }`}
->
+              ref={drawerRef}
+              id="site-nav-drawer"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Navigation"
+              inert={!navOpen}
+              className={`fixed left-0 top-0 z-50 flex h-full w-full max-w-xs flex-col border-r border-hairline bg-ink-raised shadow-2xl transition-transform duration-300 ${
+                navOpen ? "translate-x-0" : "-translate-x-full"
+              }`}
+            >
               <div className="flex items-center justify-between border-b border-hairline px-6 py-5">
                 <span className="font-label text-xs uppercase tracking-widest2 text-bone">Menu</span>
                 <button
@@ -186,11 +179,12 @@ export default function Header() {
               </nav>
 
               <div className="border-t border-hairline px-6 py-5">
+                {/* Bottom wordtag (MADE SMALLER) */}
                 <div className="flex items-center gap-3">
-                  <span className="relative block h-10 w-10 shrink-0">
-                    <Image src={LOGO_IMAGE} alt="" fill sizes="40px" className="object-contain" />
+                  <span className="relative block h-8 w-8 shrink-0">
+                    <Image src={LOGO_IMAGE} alt="" fill sizes="32px" className="object-contain" />
                   </span>
-                  <p className="font-display text-base uppercase tracking-widest text-bone">Critics Archive</p>
+                  <p className="font-display text-sm uppercase tracking-widest text-bone">Critics Archive</p>
                 </div>
               </div>
             </aside>
