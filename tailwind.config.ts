@@ -14,7 +14,7 @@ const config: Config = {
         bone: "#f2ede2", // primary text on dark
         "bone-dim": "#8a877e", // secondary/muted text
         hairline: "rgba(242,237,226,0.10)",
-        accent: "#ef4444", // red — reserved for emphasis and interactive states
+        accent: "#dc2626", // deep red — reserved for emphasis and interactive states
       },
       fontFamily: {
         script: ["var(--font-script)"], // logo wordmark only
