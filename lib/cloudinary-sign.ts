@@ -6,8 +6,9 @@ import { createHash } from "node:crypto";
  * The browser uploads directly to Cloudinary, but the SIGNATURE is minted here
  * server-side with the API secret — the secret is never bundled, never exposed
  * in a network payload. The signed params also CONSTRAIN what the client may
- * upload: fixed destination folder, jpg/png/webp only, hard size ceiling.
- * A client cannot dictate folder, format, or size.
+ * upload: fixed destination folder and jpg/png/webp only.
+ * A client cannot dictate the folder or allowed formats; size is checked in
+ * the browser for user feedback only.
  *
  * Algorithm (official docs, "Generating authentication signatures"):
  *   signature = SHA-1( alphabetical "k=v&k=v..." of ALL signed params
@@ -22,7 +23,6 @@ export type CloudinarySignResult = {
   timestamp: number;
   folder: string;
   allowedFormats: string[];
-  maxFileBytes: number;
   signature: string;
 };
 
@@ -41,7 +41,6 @@ function getCloudinaryConfig() {
 /** Fixed upload constraints the client may not override. */
 export const PRODUCT_IMAGE_FOLDER = "critics-admin/product-images";
 export const ALLOWED_PRODUCT_IMAGE_FORMATS = ["jpg", "jpeg", "png", "webp"] as const;
-export const MAX_PRODUCT_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
 
 const sortObjectKeys = (input: Record<string, unknown>): string =>
   Object.keys(input)
@@ -56,13 +55,11 @@ export function createProductImageUploadSignature(): CloudinarySignResult {
   const timestamp = Math.floor(Date.now() / 1000);
   const folder = PRODUCT_IMAGE_FOLDER;
   const formats = ALLOWED_PRODUCT_IMAGE_FORMATS.join(",");
-  const maxFileBytes = MAX_PRODUCT_IMAGE_BYTES;
 
   const params: Record<string, unknown> = {
     timestamp,
     folder,
     allowed_formats: formats,
-    max_file_size: maxFileBytes,
   };
 
   const signature = createHash("sha1")
@@ -75,7 +72,6 @@ export function createProductImageUploadSignature(): CloudinarySignResult {
     timestamp,
     folder,
     allowedFormats: [...ALLOWED_PRODUCT_IMAGE_FORMATS],
-    maxFileBytes,
     signature,
   };
 }
