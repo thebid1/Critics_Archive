@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
  * Returns a FRESH, short-lived signed upload config for ONE product image.
  *
  * The signature is generated server-side with the Cloudinary API secret and
- * constrains folder/format/size — the browser never sees the secret and cannot
+ * constrains folder/format — the browser never sees the secret and cannot
  * influence what it uploads or where it lands.
  */
 export async function POST() {

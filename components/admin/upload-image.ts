@@ -2,7 +2,7 @@
 
 /**
  * Image upload helper — the browser talks to Cloudinary directly, but only after
- * the server mints a short-lived signature constraining folder/format/size. The
+ * the server mints a short-lived signature constraining folder/format. The
  * API secret never leaves the server; the client only receives the signed params.
  */
 
@@ -34,7 +34,6 @@ export async function uploadProductImage(file: File, alt: string): Promise<Uploa
     timestamp: number;
     folder: string;
     allowedFormats: string[];
-    maxFileBytes: number;
     signature: string;
   };
 
@@ -45,7 +44,6 @@ export async function uploadProductImage(file: File, alt: string): Promise<Uploa
   formData.append("signature", signed.signature);
   formData.append("folder", signed.folder);
   formData.append("allowed_formats", signed.allowedFormats.join(","));
-  formData.append("max_file_size", String(signed.maxFileBytes));
 
   const uploadResponse = await fetch(
     `https://api.cloudinary.com/v1_1/${signed.cloudName}/image/upload`,
